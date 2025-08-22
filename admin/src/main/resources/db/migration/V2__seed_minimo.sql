@@ -4,16 +4,8 @@
 -- Roles
 INSERT INTO tb_role (nome) VALUES ('ADMIN'), ('OPERADOR');
 
--- Usuário admin
-INSERT INTO tb_usuario (nome, email, password_hash, ativo)
-VALUES ('Admin', 'admin@ladrilhos.com', 'admin', TRUE);
 
--- Vincular admin -> ADMIN
-INSERT INTO tb_usuario_role (usuario_id, role_id)
-SELECT u.id, r.id
-FROM tb_usuario u, tb_role r
-WHERE u.email = 'admin@ladrilhos.com'
-  AND r.nome = 'ADMIN';
+
 
 -- Produtos
 INSERT INTO tb_produto (sku, nome, categoria, medidas, cores, preco_unitario, ativo)

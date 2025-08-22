@@ -4,12 +4,17 @@ import jakarta.persistence.*;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
+import lombok.Getter;
+import lombok.Setter;
+import lombok.NoArgsConstructor;
 
-// Código que representa a tabela do banco de dados
-
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "tb_usuario")
 public class Usuario {
+
     @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -38,6 +43,4 @@ public class Usuario {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
-
-    // getters/setters
 }

@@ -1,8 +1,14 @@
 package com.sistema.admin.identidade.dominio;
 
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 // Código que representa a tabela do banco de dados
+@Getter
+@Setter
+@NoArgsConstructor
 @Entity
 @Table(name = "tb_role")
 public class Role {
@@ -12,5 +18,5 @@ public class Role {
     @Column(nullable = false, unique = true, length = 40)
     private String nome; // ex.: "ADMIN", "USUARIO"
 
-    // getters/setters
+
 }
