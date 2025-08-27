@@ -55,7 +55,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                List<String> roles = jwtUtil.getRoles(token); // "ROLE_USER" | "ROLE_ADMIN"
+                List<String> roles = jwtUtil.getRoles(token); // ex.: ["ROLE_USER","ROLE_ADMIN"]
 
                 var authorities = roles.stream()
                         .map(SimpleGrantedAuthority::new)
@@ -68,7 +68,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-        } catch (Exception ignore) {
+        } catch (Exception ignored) {
+
         }
 
         filterChain.doFilter(request, response);
@@ -78,8 +79,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String p = request.getServletPath();
         return p.startsWith("/api/auth/")
-                || p.startsWith("/h2-console")
                 || p.startsWith("/swagger-ui")
-                || p.startsWith("/v3/api-docs");
+                || p.equals("/swagger-ui.html")
+                || p.startsWith("/v3/api-docs")
+                || p.startsWith("/actuator/health");
     }
 }

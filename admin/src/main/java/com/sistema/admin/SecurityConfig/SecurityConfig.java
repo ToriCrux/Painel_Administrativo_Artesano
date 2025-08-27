@@ -1,6 +1,6 @@
 package com.sistema.admin.SecurityConfig;
 
-import org.springframework.boot.autoconfigure.security.servlet.PathRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -33,21 +33,24 @@ public class SecurityConfig {
                 .headers(h -> h.frameOptions(f -> f.disable()))
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
-                        // H2 console
-                        .requestMatchers(PathRequest.toH2Console()).permitAll()
-                        // Swagger
+                        // Swagger / Docs
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // Health
+                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
                         // Auth público
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/register").permitAll()
-                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        // demais rotas protegidas
+                        // Demais rotas
                         .anyRequest().authenticated()
+                )
+                // Responder 401 quando não autenticado
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint((req, res, e) ->
+                                res.sendError(HttpServletResponse.SC_UNAUTHORIZED))
                 )
                 .cors(Customizer.withDefaults());
 
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
-
         return http.build();
     }
 }

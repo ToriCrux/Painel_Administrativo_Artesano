@@ -31,9 +31,9 @@ public class Usuario {
     private Boolean ativo = true;
 
     @Column(name = "criado_em", nullable = false, updatable = false)
-    private Instant criadoEm = Instant.now();
+    private Instant criadoEm;
 
-    @Column(name = "atualizado_em")
+    @Column(name = "atualizado_em", nullable = false)
     private Instant atualizadoEm;
 
     @ManyToMany(fetch = FetchType.EAGER)
@@ -43,4 +43,16 @@ public class Usuario {
             inverseJoinColumns = @JoinColumn(name = "role_id")
     )
     private Set<Role> roles = new HashSet<>();
+
+    @PrePersist
+    private void prePersist() {
+        Instant now = Instant.now();
+        this.criadoEm = now;
+        this.atualizadoEm = now;
+    }
+
+    @PreUpdate
+    private void preUpdate() {
+        this.atualizadoEm = Instant.now();
+    }
 }

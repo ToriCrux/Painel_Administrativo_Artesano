@@ -1,39 +1,35 @@
------------- Seed mínimo para desenvolvimento ------------
+------------ Seed mínimo para desenvolvimento (PostgreSQL) ------------
 
-
--- Roles
-INSERT INTO tb_role (nome) VALUES ('ADMIN'), ('OPERADOR');
-
-
-
-
--- Produtos
+-- Produtos demo
 INSERT INTO tb_produto (sku, nome, categoria, medidas, cores, preco_unitario, ativo)
 VALUES
  ('TL-001', 'Ladrilho Coliseu', 'Classico',  '20x20', 'preto/branco', 49.90, TRUE),
  ('TL-002', 'Ladrilho Viena',   'Geometrico','20x20', 'cinza',        54.90, TRUE),
- ('TL-003', 'Ladrilho Siena',   'Florais',   '20x20', 'azul/branco',  59.90, TRUE);
+ ('TL-003', 'Ladrilho Siena',   'Florais',   '20x20', 'azul/branco',  59.90, TRUE)
+ON CONFLICT DO NOTHING;
 
 -- Estoque inicial
 INSERT INTO tb_estoque (produto_id, quantidade_atual, minimo)
-SELECT id, 100, 10 FROM tb_produto WHERE sku IN ('TL-001','TL-002','TL-003');
+SELECT id, 100, 10 FROM tb_produto WHERE sku IN ('TL-001','TL-002','TL-003')
+ON CONFLICT DO NOTHING;
 
 -- Movimentações iniciais
 INSERT INTO tb_movimentacao_estoque (produto_id, tipo, origem, quantidade, saldo_anterior, saldo_posterior)
 SELECT p.id, 'ENTRADA', 'PRODUCAO', 100, 0, 100
 FROM tb_produto p WHERE p.sku IN ('TL-001','TL-002','TL-003');
 
--- Cliente
+-- Cliente demo
 INSERT INTO tb_cliente (nome, cpf_cnpj, email, telefone, cep, cidade, uf)
-VALUES ('Cliente Demo', '12345678000199', 'cliente@demo.com', '(11) 99999-0000', '01000-000', 'São Paulo', 'SP');
+VALUES ('Cliente Demo', '12345678000199', 'cliente@demo.com', '(11) 99999-0000', '01000-000', 'São Paulo', 'SP')
+ON CONFLICT DO NOTHING;
 
--- proposta
+-- Proposta demo
 INSERT INTO tb_proposta (id_cliente, status, total, data_proposta, data_validade)
 SELECT c.id, 'APROVADA', 0, CURRENT_DATE, CURRENT_DATE + 15
 FROM tb_cliente c
 WHERE c.email = 'cliente@demo.com';
 
--- Adiciona 2 itens à proposta
+-- Itens da proposta
 INSERT INTO tb_proposta_item (id_proposta, id_produto, quantidade, preco_unitario, subtotal)
 SELECT p.id, pr.id, 5, pr.preco_unitario, 5 * pr.preco_unitario
 FROM tb_proposta p

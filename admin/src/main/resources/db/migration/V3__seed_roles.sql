@@ -1,13 +1,11 @@
--- Seed de roles padrão (idempotente)
+-- Seed de roles padrão (PostgreSQL, idempotente e padronizado)
 
-INSERT INTO tb_role (nome)
-SELECT 'USUARIO'
-WHERE NOT EXISTS (SELECT 1 FROM tb_role WHERE nome = 'USUARIO');
+-- Migração de nomes “legados” (se existirem no banco antigo)
+UPDATE tb_role SET nome = 'ROLE_USER'      WHERE LOWER(nome) = 'usuario';
+UPDATE tb_role SET nome = 'ROLE_ADMIN'     WHERE LOWER(nome) = 'admin';
+UPDATE tb_role SET nome = 'ROLE_OPERADOR'  WHERE LOWER(nome) = 'operador';
 
-INSERT INTO tb_role (nome)
-SELECT 'ADMIN'
-WHERE NOT EXISTS (SELECT 1 FROM tb_role WHERE nome = 'ADMIN');
-
-MERGE INTO tb_role (nome) KEY (nome) VALUES ('ROLE_USER');
-MERGE INTO tb_role (nome) KEY (nome) VALUES ('ROLE_ADMIN');
-MERGE INTO tb_role (nome) KEY (nome) VALUES ('ROLE_OPERADOR');
+-- Roles no padrão Spring Security
+INSERT INTO tb_role (nome) VALUES ('ROLE_USER')      ON CONFLICT DO NOTHING;
+INSERT INTO tb_role (nome) VALUES ('ROLE_ADMIN')     ON CONFLICT DO NOTHING;
+INSERT INTO tb_role (nome) VALUES ('ROLE_OPERADOR')  ON CONFLICT DO NOTHING;
