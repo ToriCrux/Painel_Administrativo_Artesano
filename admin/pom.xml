@@ -57,19 +57,17 @@
 		</dependency>
 
 		<!-- Banco de dados -->
-		<!-- Postgres para executar a app e testes -->
 		<dependency>
 			<groupId>org.postgresql</groupId>
 			<artifactId>postgresql</artifactId>
 		</dependency>
-		<!-- H2 apenas para testes locais (se ainda quiser usar em testes unitários) -->
 		<dependency>
 			<groupId>com.h2database</groupId>
 			<artifactId>h2</artifactId>
 			<scope>test</scope>
 		</dependency>
 
-		<!-- Lombok (uma única entrada) -->
+		<!-- Lombok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
 			<artifactId>lombok</artifactId>
@@ -96,7 +94,7 @@
 			<version>2.6.0</version>
 		</dependency>
 
-		<!-- JWT (usar apenas a linha 0.11.5, remover 0.9.1) -->
+		<!-- JWT -->
 		<dependency>
 			<groupId>io.jsonwebtoken</groupId>
 			<artifactId>jjwt-api</artifactId>
@@ -118,9 +116,28 @@
 
 	<build>
 		<plugins>
+			<!-- Spring Boot -->
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+			</plugin>
+
+			<!-- Flyway Maven Plugin -->
+			<plugin>
+				<groupId>org.flywaydb</groupId>
+				<artifactId>flyway-maven-plugin</artifactId>
+				<version>11.7.2</version>
+				<configuration>
+					<url>jdbc:postgresql://localhost:5433/admin_db</url>
+					<user>admin_user</user>
+					<password>admin_pass</password>
+					<schemas>
+						<schema>public</schema>
+					</schemas>
+					<locations>
+						<location>classpath:db/migration</location>
+					</locations>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>
