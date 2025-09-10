@@ -1,6 +1,5 @@
-package com.sistema.admin.SecurityConfig;
+package com.sistema.admin.config.jwt;
 
-import com.sistema.admin.auth.seguranca.JwtUtil;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;

@@ -30,7 +30,7 @@ public class Produto {
     private String nome;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "categoria_id", nullable = false)
+    @JoinColumn(nullable = false)
     private Categoria categoria;
 
     @ManyToMany
@@ -44,24 +44,23 @@ public class Produto {
     @Column(length = 120)
     private String medidas;
 
-    @Column(name = "preco_unitario", nullable = false, precision = 19, scale = 2)
+    @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal precoUnitario;
 
     @Builder.Default
     private Boolean ativo = true;
 
-    @Builder.Default
-    @Column(name = "criado_em", nullable = false, updatable = false)
-    private OffsetDateTime criadoEm = OffsetDateTime.now();
+    @Column(nullable = false, updatable = false)
+    private OffsetDateTime criadoEm;
 
-    @Builder.Default
-    @Column(name = "atualizado_em", nullable = false)
-    private OffsetDateTime atualizadoEm = OffsetDateTime.now();
+    @Column(nullable = false)
+    private OffsetDateTime atualizadoEm;
 
     @PrePersist
     public void prePersist() {
-        this.criadoEm = OffsetDateTime.now();
-        this.atualizadoEm = OffsetDateTime.now();
+        var agora = OffsetDateTime.now();
+        this.criadoEm = agora;
+        this.atualizadoEm = agora;
     }
 
     @PreUpdate

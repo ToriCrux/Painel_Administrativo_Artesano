@@ -1,12 +1,14 @@
 package com.sistema.admin.catalogo.produto.aplicacao;
 
+import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
 import com.sistema.admin.catalogo.categoria.infra.CategoriaRepository;
+import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
 import com.sistema.admin.catalogo.cor.infra.CorRepository;
 import com.sistema.admin.catalogo.produto.dominio.Produto;
 
 import com.sistema.admin.catalogo.produto.infra.ProdutoRepository;
-import com.sistema.admin.controle.dto.produto.ProdutoRequestDTO;
-import com.sistema.admin.controle.dto.produto.ProdutoResponseDTO;
+import com.sistema.admin.catalogo.produto.api.dto.ProdutoRequest;
+import com.sistema.admin.catalogo.produto.api.dto.ProdutoResponse;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -23,7 +25,7 @@ public class ProdutoService {
     private final CategoriaRepository categoriaRepository;
     private final CorRepository corRepository;
 
-    public Page<ProdutoResponseDTO> listar(String nome, Pageable pageable) {
+    public Page<ProdutoResponse> listar(String nome, Pageable pageable) {
         var page = (nome != null && !nome.isBlank())
                 ? produtoRepository.findByNomeContainingIgnoreCase(nome, pageable)
                 : produtoRepository.findAll(pageable);
@@ -31,7 +33,7 @@ public class ProdutoService {
         return page.map(this::toResponse);
     }
 
-    public ProdutoResponseDTO salvar(ProdutoRequestDTO dto) {
+    public ProdutoResponse salvar(ProdutoRequest dto) {
         produtoRepository.findByCodigoIgnoreCase(dto.codigo())
                 .ifPresent(p -> { throw new IllegalArgumentException("Código já existe"); });
 
@@ -57,7 +59,7 @@ public class ProdutoService {
         return toResponse(produtoRepository.save(produto));
     }
 
-    public ProdutoResponseDTO atualizar(Long id, ProdutoRequestDTO dto) {
+    public ProdutoResponse atualizar(Long id, ProdutoRequest dto) {
         var produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
 
@@ -93,12 +95,12 @@ public class ProdutoService {
         produtoRepository.save(produto);
     }
 
-    private ProdutoResponseDTO toResponse(Produto produto) {
-        return new ProdutoResponseDTO(
+    private ProdutoResponse toResponse(Produto produto) {
+        return new ProdutoResponse(
                 produto.getId(),
                 produto.getCodigo(),
                 produto.getNome(),
-                new com.sistema.admin.controle.dto.categoria.CategoriaResponseDTO(
+                new CategoriaResponse(
                         produto.getCategoria().getId(),
                         produto.getCategoria().getNome(),
                         produto.getCategoria().getAtivo(),
@@ -106,7 +108,7 @@ public class ProdutoService {
                         produto.getCategoria().getAtualizadoEm()
                 ),
                 produto.getCores().stream()
-                        .map(c -> new com.sistema.admin.controle.dto.cor.CorResponseDTO(
+                        .map(c -> new CorResponse(
                                 c.getId(), c.getNome(), c.getHex(),
                                 c.getAtivo(), c.getCriadoEm(), c.getAtualizadoEm()
                         ))

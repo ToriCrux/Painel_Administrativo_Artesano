@@ -2,6 +2,7 @@ package com.sistema.admin.auth.dominio;
 
 import jakarta.persistence.*;
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.Set;
 import lombok.Getter;
@@ -24,17 +25,11 @@ public class Usuario {
     @Column(nullable = false, unique = true, length = 160)
     private String email;
 
-    @Column(name = "password_hash", nullable = false, length = 255)
+    @Column(nullable = false, length = 255)
     private String passwordHash;
 
     @Column(nullable = false)
     private Boolean ativo = true;
-
-    @Column(name = "criado_em", nullable = false, updatable = false)
-    private Instant criadoEm;
-
-    @Column(name = "atualizado_em", nullable = false)
-    private Instant atualizadoEm;
 
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
@@ -44,15 +39,21 @@ public class Usuario {
     )
     private Set<Role> roles = new HashSet<>();
 
+    @Column(nullable = false, updatable = false)
+    private OffsetDateTime criadoEm;
+
+    @Column(nullable = false)
+    private OffsetDateTime atualizadoEm;
+
     @PrePersist
-    private void prePersist() {
-        Instant now = Instant.now();
-        this.criadoEm = now;
-        this.atualizadoEm = now;
+    public void prePersist() {
+        var agora = OffsetDateTime.now();
+        this.criadoEm = agora;
+        this.atualizadoEm = agora;
     }
 
     @PreUpdate
-    private void preUpdate() {
-        this.atualizadoEm = Instant.now();
+    public void preUpdate() {
+        this.atualizadoEm = OffsetDateTime.now();
     }
 }

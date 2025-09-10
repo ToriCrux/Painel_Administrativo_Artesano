@@ -3,8 +3,8 @@ package com.sistema.admin.catalogo.cor.aplicacao;
 
 import com.sistema.admin.catalogo.cor.dominio.Cor;
 import com.sistema.admin.catalogo.cor.infra.CorRepository;
-import com.sistema.admin.controle.dto.cor.CorRequestDTO;
-import com.sistema.admin.controle.dto.cor.CorResponseDTO;
+import com.sistema.admin.catalogo.cor.api.dto.CorRequest;
+import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,7 +17,7 @@ public class CorService {
 
     private final CorRepository repository;
 
-    public Page<CorResponseDTO> listar(String nome, Pageable pageable) {
+    public Page<CorResponse> listar(String nome, Pageable pageable) {
         Page<Cor> cores;
         if (nome != null && !nome.isBlank()) {
             cores = repository.findByNomeContainingIgnoreCase(nome, pageable);
@@ -27,7 +27,7 @@ public class CorService {
         return cores.map(this::toResponse);
     }
 
-    public CorResponseDTO salvar(CorRequestDTO dto) {
+    public CorResponse salvar(CorRequest dto) {
         repository.findByNomeIgnoreCase(dto.nome())
                 .ifPresent(c -> { throw new IllegalArgumentException("Cor já existe"); });
 
@@ -36,7 +36,7 @@ public class CorService {
         return toResponse(salva);
     }
 
-    public CorResponseDTO atualizar(Long id, CorRequestDTO dto) {
+    public CorResponse atualizar(Long id, CorRequest dto) {
         Cor existente = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Cor não encontrada"));
 
@@ -57,8 +57,8 @@ public class CorService {
         repository.deleteById(id);
     }
 
-    private CorResponseDTO toResponse(Cor cor) {
-        return new CorResponseDTO(
+    private CorResponse toResponse(Cor cor) {
+        return new CorResponse(
                 cor.getId(),
                 cor.getNome(),
                 cor.getHex(),
@@ -68,7 +68,7 @@ public class CorService {
         );
     }
 
-    private Cor toEntity(CorRequestDTO dto) {
+    private Cor toEntity(CorRequest dto) {
         return Cor.builder()
                 .nome(dto.nome())
                 .hex(dto.hex())

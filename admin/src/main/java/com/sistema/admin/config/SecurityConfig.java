@@ -1,5 +1,6 @@
-package com.sistema.admin.SecurityConfig;
+package com.sistema.admin.config;
 
+import com.sistema.admin.config.jwt.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

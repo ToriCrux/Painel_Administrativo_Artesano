@@ -4,6 +4,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "tb_cor", uniqueConstraints = {
@@ -15,6 +16,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @Builder
 public class Cor {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -28,20 +30,21 @@ public class Cor {
     private Boolean ativo = true;
 
     @Column(nullable = false, updatable = false)
-    private LocalDateTime criadoEm;
+    private OffsetDateTime criadoEm;
 
     @Column(nullable = false)
-    private LocalDateTime atualizadoEm;
+    private OffsetDateTime atualizadoEm;
 
     @PrePersist
     public void prePersist() {
-        criadoEm = LocalDateTime.now();
-        atualizadoEm = LocalDateTime.now();
+        var agora = OffsetDateTime.now();
+        this.criadoEm = agora;
+        this.atualizadoEm = agora;
     }
 
     @PreUpdate
     public void preUpdate() {
-        atualizadoEm = LocalDateTime.now();
+        this.atualizadoEm = OffsetDateTime.now();
     }
 }
 

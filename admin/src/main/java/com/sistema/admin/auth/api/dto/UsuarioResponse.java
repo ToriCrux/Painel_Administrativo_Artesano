@@ -1,8 +1,8 @@
-package com.sistema.admin.controle.dto.loginEcadastro;
+package com.sistema.admin.auth.api.dto;
 
 import java.util.Set;
 
-public record UsuarioRespostaDTO(
+public record UsuarioResponse(
         Long id,
         String nome,
         String email,

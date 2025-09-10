@@ -3,8 +3,8 @@ package com.sistema.admin.catalogo.categoria.aplicacao;
 
 import com.sistema.admin.catalogo.categoria.dominio.Categoria;
 import com.sistema.admin.catalogo.categoria.infra.CategoriaRepository;
-import com.sistema.admin.controle.dto.categoria.CategoriaRequestDTO;
-import com.sistema.admin.controle.dto.categoria.CategoriaResponseDTO;
+import com.sistema.admin.catalogo.categoria.api.dto.CategoriaRequest;
+import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -17,7 +17,7 @@ public class CategoriaService {
 
     private final CategoriaRepository repository;
 
-    public Page<CategoriaResponseDTO> listar(String nome, Pageable pageable) {
+    public Page<CategoriaResponse> listar(String nome, Pageable pageable) {
         Page<Categoria> page = (nome != null && !nome.isBlank())
                 ? repository.findByNomeContainingIgnoreCase(nome, pageable)
                 : repository.findAll(pageable);
@@ -25,7 +25,7 @@ public class CategoriaService {
         return page.map(this::toResponse);
     }
 
-    public CategoriaResponseDTO salvar(CategoriaRequestDTO dto) {
+    public CategoriaResponse salvar(CategoriaRequest dto) {
         repository.findByNomeIgnoreCase(dto.nome())
                 .ifPresent(c -> { throw new IllegalArgumentException("Categoria já existe"); });
 
@@ -37,7 +37,7 @@ public class CategoriaService {
         return toResponse(saved);
     }
 
-    public CategoriaResponseDTO atualizar(Long id, CategoriaRequestDTO dto) {
+    public CategoriaResponse atualizar(Long id, CategoriaRequest dto) {
         Categoria existente = repository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada"));
 
@@ -60,8 +60,8 @@ public class CategoriaService {
         repository.save(categoria);
     }
 
-    private CategoriaResponseDTO toResponse(Categoria categoria) {
-        return new CategoriaResponseDTO(
+    private CategoriaResponse toResponse(Categoria categoria) {
+        return new CategoriaResponse(
                 categoria.getId(),
                 categoria.getNome(),
                 categoria.getAtivo(),

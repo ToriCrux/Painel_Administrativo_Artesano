@@ -1,4 +1,4 @@
-package com.sistema.admin.auth.seguranca;
+package com.sistema.admin.config.jwt;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

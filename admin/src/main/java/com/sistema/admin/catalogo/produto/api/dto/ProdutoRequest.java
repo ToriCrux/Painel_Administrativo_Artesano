@@ -1,10 +1,10 @@
-package com.sistema.admin.controle.dto.produto;
+package com.sistema.admin.catalogo.produto.api.dto;
 
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
 import java.util.Set;
 
-public record ProdutoRequestDTO(
+public record ProdutoRequest(
 
         @NotBlank @Size(max = 60)
         String codigo,

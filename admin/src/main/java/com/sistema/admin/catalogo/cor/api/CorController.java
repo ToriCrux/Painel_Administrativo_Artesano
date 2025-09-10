@@ -1,9 +1,9 @@
-package com.sistema.admin.catalogo.cor.controle;
+package com.sistema.admin.catalogo.cor.api;
 
 import com.sistema.admin.catalogo.cor.aplicacao.CorService;
 
-import com.sistema.admin.controle.dto.cor.CorRequestDTO;
-import com.sistema.admin.controle.dto.cor.CorResponseDTO;
+import com.sistema.admin.catalogo.cor.api.dto.CorRequest;
+import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -12,7 +12,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/cores")
+@RequestMapping("/api/v1/cores")
 @RequiredArgsConstructor
 public class CorController {
 
@@ -20,19 +20,19 @@ public class CorController {
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public Page<CorResponseDTO> listar(@RequestParam(required = false) String nome, Pageable pageable) {
+    public Page<CorResponse> listar(@RequestParam(required = false) String nome, Pageable pageable) {
         return service.listar(nome, pageable);
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public CorResponseDTO salvar(@RequestBody @Valid CorRequestDTO dto) {
+    public CorResponse salvar(@RequestBody @Valid CorRequest dto) {
         return service.salvar(dto);
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public CorResponseDTO atualizar(@PathVariable Long id, @RequestBody @Valid CorRequestDTO dto) {
+    public CorResponse atualizar(@PathVariable Long id, @RequestBody @Valid CorRequest dto) {
         return service.atualizar(id, dto);
     }
 

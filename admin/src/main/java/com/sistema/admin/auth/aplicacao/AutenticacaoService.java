@@ -1,15 +1,16 @@
 package com.sistema.admin.auth.aplicacao;
 
-import com.sistema.admin.controle.dto.loginEcadastro.LoginDTO;
-import com.sistema.admin.controle.dto.loginEcadastro.RegistroDTO;
-import com.sistema.admin.controle.dto.TokenDTO;
-import com.sistema.admin.controle.dto.loginEcadastro.UsuarioRespostaDTO;
+import com.sistema.admin.auth.api.dto.LoginResponse;
+import com.sistema.admin.auth.api.dto.RegistroResponse;
+import com.sistema.admin.auth.api.dto.TokenResponse;
+import com.sistema.admin.auth.api.dto.UsuarioResponse;
 import com.sistema.admin.auth.dominio.Role;
 import com.sistema.admin.auth.dominio.Usuario;
 import com.sistema.admin.auth.infra.RoleRepository;
 import com.sistema.admin.auth.infra.UsuarioRepository;
-import com.sistema.admin.auth.seguranca.JwtUtil;
+import com.sistema.admin.config.jwt.JwtUtil;
 import jakarta.persistence.EntityNotFoundException;
+import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -25,29 +26,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
-public class AuthService {
+@RequiredArgsConstructor
+public class AutenticacaoService {
 
-    private final UsuarioRepository usuarioRepo;
+    private final UsuarioRepository usuarioRepository;
     private final RoleRepository roleRepo;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public AuthService(UsuarioRepository usuarioRepo,
-                       RoleRepository roleRepo,
-                       PasswordEncoder passwordEncoder,
-                       JwtUtil jwtUtil) {
-        this.usuarioRepo = usuarioRepo;
-        this.roleRepo = roleRepo;
-        this.passwordEncoder = passwordEncoder;
-        this.jwtUtil = jwtUtil;
-    }
-
     @Transactional(readOnly = true)
-    public TokenDTO login(LoginDTO credenciais) {
+    public TokenResponse login(LoginResponse credenciais) {
         final String email = Objects.requireNonNull(credenciais.email(), "email é obrigatório");
         final String senha = Objects.requireNonNull(credenciais.senha(), "senha é obrigatória");
 
-        Usuario usuario = usuarioRepo.findByEmail(email)
+        Usuario usuario = usuarioRepository.findByEmail(email)
                 .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o email informado."));
 
         if (!passwordEncoder.matches(senha, usuario.getPasswordHash())) {
@@ -56,16 +48,16 @@ public class AuthService {
 
         UserDetails principal = toSpringUserDetails(usuario);
         String token = jwtUtil.generateToken(principal);
-        return new TokenDTO(token);
+        return new TokenResponse(token);
     }
 
     @Transactional
-    public UsuarioRespostaDTO registrar(RegistroDTO dto) {
+    public UsuarioResponse registrar(RegistroResponse dto) {
         final String nome  = Objects.requireNonNull(dto.nome(),  "nome é obrigatório");
         final String email = Objects.requireNonNull(dto.email(), "email é obrigatório");
         final String senha = Objects.requireNonNull(dto.senha(), "senha é obrigatória");
 
-        if (usuarioRepo.existsByEmail(email)) {
+        if (usuarioRepository.existsByEmail(email)) {
             throw new IllegalArgumentException("Já existe um usuário cadastrado com este email.");
         }
 
@@ -81,9 +73,9 @@ public class AuthService {
         novo.setAtivo(Boolean.TRUE);
         novo.setRoles(roles);
 
-        Usuario salvo = usuarioRepo.save(novo);
+        Usuario salvo = usuarioRepository.save(novo);
 
-        return new UsuarioRespostaDTO(
+        return new UsuarioResponse(
                 salvo.getId(),
                 salvo.getNome(),
                 salvo.getEmail(),
