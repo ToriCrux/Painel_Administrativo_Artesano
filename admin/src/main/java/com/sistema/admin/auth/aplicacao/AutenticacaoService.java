@@ -8,9 +8,12 @@ import com.sistema.admin.auth.dominio.Role;
 import com.sistema.admin.auth.dominio.Usuario;
 import com.sistema.admin.auth.infra.RoleRepository;
 import com.sistema.admin.auth.infra.UsuarioRepository;
+import com.sistema.admin.config.exception.ConflictException;
+import com.sistema.admin.config.exception.NotFoundException;
 import com.sistema.admin.config.jwt.JwtUtil;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Sort;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.User;
@@ -30,17 +33,17 @@ import java.util.stream.Collectors;
 public class AutenticacaoService {
 
     private final UsuarioRepository usuarioRepository;
-    private final RoleRepository roleRepo;
+    private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
     @Transactional(readOnly = true)
-    public TokenResponse login(LoginResponse credenciais) {
-        final String email = Objects.requireNonNull(credenciais.email(), "email é obrigatório");
-        final String senha = Objects.requireNonNull(credenciais.senha(), "senha é obrigatória");
+    public TokenResponse login(LoginResponse loginResponse) {
+        final String email = Objects.requireNonNull(loginResponse.email(), "email é obrigatório");
+        final String senha = Objects.requireNonNull(loginResponse.senha(), "senha é obrigatória");
 
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new EntityNotFoundException("Usuário não encontrado para o email informado."));
+                .orElseThrow(() -> new BadCredentialsException("Credenciais inválidas."));
 
         if (!passwordEncoder.matches(senha, usuario.getPasswordHash())) {
             throw new BadCredentialsException("Credenciais inválidas.");
@@ -52,18 +55,18 @@ public class AutenticacaoService {
     }
 
     @Transactional
-    public UsuarioResponse registrar(RegistroResponse dto) {
-        final String nome  = Objects.requireNonNull(dto.nome(),  "nome é obrigatório");
-        final String email = Objects.requireNonNull(dto.email(), "email é obrigatório");
-        final String senha = Objects.requireNonNull(dto.senha(), "senha é obrigatória");
+    public UsuarioResponse registrar(RegistroResponse registroResponse) {
+        final String nome  = Objects.requireNonNull(registroResponse.nome(),  "nome é obrigatório");
+        final String email = Objects.requireNonNull(registroResponse.email(), "email é obrigatório");
+        final String senha = Objects.requireNonNull(registroResponse.senha(), "senha é obrigatória");
 
         if (usuarioRepository.existsByEmail(email)) {
-            throw new IllegalArgumentException("Já existe um usuário cadastrado com este email.");
+            throw new ConflictException("Já existe um usuário cadastrado com este email.");
         }
 
         Set<Role> roles = new HashSet<>();
-        Role roleUser = roleRepo.findByNome("ROLE_USER")
-                .orElseThrow(() -> new IllegalStateException("Role padrão ROLE_USER não encontrada."));
+        Role roleUser = roleRepository.findByNome("ROLE_USER")
+                .orElseThrow(() -> new NotFoundException("Role padrão ROLE_USER não encontrada."));
         roles.add(roleUser);
 
         Usuario novo = new Usuario();
@@ -102,5 +105,9 @@ public class AutenticacaoService {
                 .credentialsExpired(false)
                 .disabled(disabled)
                 .build();
+    }
+
+    public Collection<Usuario> listar() {
+        return usuarioRepository.findAll(Sort.by("nome"));
     }
 }

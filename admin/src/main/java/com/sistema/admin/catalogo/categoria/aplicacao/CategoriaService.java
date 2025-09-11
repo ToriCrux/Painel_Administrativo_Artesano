@@ -5,7 +5,8 @@ import com.sistema.admin.catalogo.categoria.dominio.Categoria;
 import com.sistema.admin.catalogo.categoria.infra.CategoriaRepository;
 import com.sistema.admin.catalogo.categoria.api.dto.CategoriaRequest;
 import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
-import jakarta.persistence.EntityNotFoundException;
+import com.sistema.admin.config.exception.ConflictException;
+import com.sistema.admin.config.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,51 +16,57 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class CategoriaService {
 
-    private final CategoriaRepository repository;
+    private final CategoriaRepository categoriaRepository;
 
     public Page<CategoriaResponse> listar(String nome, Pageable pageable) {
         Page<Categoria> page = (nome != null && !nome.isBlank())
-                ? repository.findByNomeContainingIgnoreCase(nome, pageable)
-                : repository.findAll(pageable);
+                ? categoriaRepository.findByNomeContainingIgnoreCase(nome, pageable)
+                : categoriaRepository.findAll(pageable);
 
         return page.map(this::toResponse);
     }
 
-    public CategoriaResponse salvar(CategoriaRequest dto) {
-        repository.findByNomeIgnoreCase(dto.nome())
-                .ifPresent(c -> { throw new IllegalArgumentException("Categoria já existe"); });
+    public CategoriaResponse salvar(CategoriaRequest categoriaRequest) {
+        categoriaRepository.findByNomeIgnoreCase(categoriaRequest.nome())
+                .ifPresent(c -> { throw new ConflictException("Categoria já existe"); });
 
         Categoria categoria = new Categoria();
-        categoria.setNome(dto.nome());
-        categoria.setAtivo(dto.ativo());
+        categoria.setNome(categoriaRequest.nome());
+        categoria.setAtivo(categoriaRequest.ativo());
 
-        Categoria saved = repository.save(categoria);
-        return toResponse(saved);
+        return toResponse(categoriaRepository.save(categoria));
     }
 
-    public CategoriaResponse atualizar(Long id, CategoriaRequest dto) {
-        Categoria existente = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada"));
+    public CategoriaResponse atualizar(Long id, CategoriaRequest categoriaRequest) {
+        Categoria existente = categoriaRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Categoria não encontrada"));
 
-        if (!existente.getNome().equalsIgnoreCase(dto.nome())) {
-            repository.findByNomeIgnoreCase(dto.nome())
-                    .ifPresent(c -> { throw new IllegalArgumentException("Categoria já existe"); });
+        if (!existente.getNome().equalsIgnoreCase(categoriaRequest.nome())) {
+            categoriaRepository.findByNomeIgnoreCase(categoriaRequest.nome())
+                    .ifPresent(c -> { throw new ConflictException("Categoria já existe"); });
         }
 
-        existente.setNome(dto.nome());
-        existente.setAtivo(dto.ativo());
+        existente.setNome(categoriaRequest.nome());
+        existente.setAtivo(categoriaRequest.ativo());
 
-        Categoria updated = repository.save(existente);
-        return toResponse(updated);
+        return toResponse(categoriaRepository.save(existente));
     }
 
-    public void deletar(Long id) {
-        Categoria categoria = repository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada"));
+    public void desativar(Long id) {
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Categoria não encontrada"));
         categoria.setAtivo(false); // soft delete
-        repository.save(categoria);
+        categoriaRepository.save(categoria);
     }
 
+    // hard delete
+    public void deletar(Long id) {
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Categoria não encontrada"));
+        categoriaRepository.delete(categoria);
+    }
+
+    // usar @Mapper é mais DDD friendly
     private CategoriaResponse toResponse(Categoria categoria) {
         return new CategoriaResponse(
                 categoria.getId(),

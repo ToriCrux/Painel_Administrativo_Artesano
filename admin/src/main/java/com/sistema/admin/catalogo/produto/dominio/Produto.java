@@ -58,9 +58,7 @@ public class Produto {
 
     @PrePersist
     public void prePersist() {
-        var agora = OffsetDateTime.now();
-        this.criadoEm = agora;
-        this.atualizadoEm = agora;
+        this.criadoEm = OffsetDateTime.now();
     }
 
     @PreUpdate

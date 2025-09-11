@@ -20,7 +20,7 @@ public record ProdutoRequest(
         @Size(max = 120)
         String medidas,
 
-        @NotNull @DecimalMin(value = "0.0", inclusive = true)
+        @NotNull @DecimalMin(value = "0.0")
         BigDecimal precoUnitario,
 
         @NotNull

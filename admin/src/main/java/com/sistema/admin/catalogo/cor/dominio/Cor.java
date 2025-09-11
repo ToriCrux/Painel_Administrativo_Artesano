@@ -3,7 +3,6 @@ package com.sistema.admin.catalogo.cor.dominio;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 
 @Entity
@@ -37,9 +36,7 @@ public class Cor {
 
     @PrePersist
     public void prePersist() {
-        var agora = OffsetDateTime.now();
-        this.criadoEm = agora;
-        this.atualizadoEm = agora;
+        this.criadoEm = OffsetDateTime.now();
     }
 
     @PreUpdate

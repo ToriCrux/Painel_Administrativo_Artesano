@@ -9,6 +9,8 @@ import com.sistema.admin.catalogo.produto.dominio.Produto;
 import com.sistema.admin.catalogo.produto.infra.ProdutoRepository;
 import com.sistema.admin.catalogo.produto.api.dto.ProdutoRequest;
 import com.sistema.admin.catalogo.produto.api.dto.ProdutoResponse;
+import com.sistema.admin.config.exception.ConflictException;
+import com.sistema.admin.config.exception.NotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -33,27 +35,27 @@ public class ProdutoService {
         return page.map(this::toResponse);
     }
 
-    public ProdutoResponse salvar(ProdutoRequest dto) {
-        produtoRepository.findByCodigoIgnoreCase(dto.codigo())
-                .ifPresent(p -> { throw new IllegalArgumentException("Código já existe"); });
+    public ProdutoResponse salvar(ProdutoRequest produtoRequest) {
+        produtoRepository.findByCodigoIgnoreCase(produtoRequest.codigo())
+                .ifPresent(p -> { throw new ConflictException("Código já existe"); });
 
-        var categoria = categoriaRepository.findByNomeIgnoreCase(dto.categoriaNome())
-                .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada: " + dto.categoriaNome()));
+        var categoria = categoriaRepository.findByNomeIgnoreCase(produtoRequest.categoriaNome())
+                .orElseThrow(() -> new NotFoundException("Categoria não encontrada: " + produtoRequest.categoriaNome()));
 
 
-        var cores = dto.corIds().stream()
+        var cores = produtoRequest.corIds().stream()
                 .map(id -> corRepository.findById(id)
                         .orElseThrow(() -> new EntityNotFoundException("Cor não encontrada: " + id)))
                 .collect(Collectors.toSet());
 
         var produto = Produto.builder()
-                .codigo(dto.codigo())
-                .nome(dto.nome())
+                .codigo(produtoRequest.codigo())
+                .nome(produtoRequest.nome())
                 .categoria(categoria)
                 .cores(cores)
-                .medidas(dto.medidas())
-                .precoUnitario(dto.precoUnitario())
-                .ativo(dto.ativo())
+                .medidas(produtoRequest.medidas())
+                .precoUnitario(produtoRequest.precoUnitario())
+                .ativo(produtoRequest.ativo())
                 .build();
 
         return toResponse(produtoRepository.save(produto));
@@ -95,6 +97,7 @@ public class ProdutoService {
         produtoRepository.save(produto);
     }
 
+    // usar @Mapper é mais DDD friendly
     private ProdutoResponse toResponse(Produto produto) {
         return new ProdutoResponse(
                 produto.getId(),

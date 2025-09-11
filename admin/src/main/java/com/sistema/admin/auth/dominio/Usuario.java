@@ -1,7 +1,6 @@
 package com.sistema.admin.auth.dominio;
 
 import jakarta.persistence.*;
-import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.HashSet;
 import java.util.Set;
@@ -25,7 +24,7 @@ public class Usuario {
     @Column(nullable = false, unique = true, length = 160)
     private String email;
 
-    @Column(nullable = false, length = 255)
+    @Column(nullable = false)
     private String passwordHash;
 
     @Column(nullable = false)
@@ -47,9 +46,7 @@ public class Usuario {
 
     @PrePersist
     public void prePersist() {
-        var agora = OffsetDateTime.now();
-        this.criadoEm = agora;
-        this.atualizadoEm = agora;
+        this.criadoEm = OffsetDateTime.now();
     }
 
     @PreUpdate

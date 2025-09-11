@@ -21,22 +21,4 @@ public class Role {
     @Column(nullable = false, unique = true, length = 40)
     private String nome; // ex.: "ADMIN", "USUARIO"
 
-    @Column(nullable = false, updatable = false)
-    private OffsetDateTime criadoEm;
-
-    @Column(nullable = false)
-    private OffsetDateTime atualizadoEm;
-
-    @PrePersist
-    public void prePersist() {
-        var agora = OffsetDateTime.now();
-        this.criadoEm = agora;
-        this.atualizadoEm = agora;
-    }
-
-    @PreUpdate
-    public void preUpdate() {
-        this.atualizadoEm = OffsetDateTime.now();
-    }
-
 }

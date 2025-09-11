@@ -3,8 +3,8 @@ CREATE TABLE IF NOT EXISTS tb_categoria (
     id BIGSERIAL PRIMARY KEY,
     nome VARCHAR(100) NOT NULL UNIQUE,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
-    criado_em TIMESTAMP NOT NULL DEFAULT now(),
-    atualizado_em TIMESTAMP NOT NULL DEFAULT now()
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT now(),
+    atualizado_em TIMESTAMPTZ NULL
 );
 
 ------------ Cores ------------
@@ -13,8 +13,8 @@ CREATE TABLE IF NOT EXISTS tb_cor (
     nome VARCHAR(100) NOT NULL UNIQUE,
     hex VARCHAR(7),
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
-    criado_em TIMESTAMP NOT NULL DEFAULT now(),
-    atualizado_em TIMESTAMP NOT NULL DEFAULT now()
+    criado_em TIMESTAMPTZ NOT NULL DEFAULT now(),
+    atualizado_em TIMESTAMPTZ NULL
 );
 
 ------------ Produtos ------------
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS tb_produto (
     preco_unitario NUMERIC(19,2) NOT NULL CHECK (preco_unitario >= 0),
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
     criado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    atualizado_em TIMESTAMPTZ NULL
 );
 
 CREATE UNIQUE INDEX uq_produto_codigo_lower ON tb_produto (LOWER(codigo));
@@ -52,7 +52,7 @@ CREATE TABLE IF NOT EXISTS tb_usuario (
   password_hash    VARCHAR(255) NOT NULL,
   ativo            BOOLEAN NOT NULL DEFAULT TRUE,
   criado_em        TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  atualizado_em    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  atualizado_em    TIMESTAMPTZ NULL
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_usuario_email_lower
@@ -87,7 +87,8 @@ CREATE TABLE IF NOT EXISTS tb_cliente (
   cidade        VARCHAR(80),
   uf            VARCHAR(2),
   referencia    VARCHAR(160),
-  criado_em     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  criado_em     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  atualizado_em  TIMESTAMPTZ NULL
 );
 
 CREATE TABLE IF NOT EXISTS tb_proposta (
@@ -99,7 +100,7 @@ CREATE TABLE IF NOT EXISTS tb_proposta (
   data_proposta  DATE NOT NULL DEFAULT CURRENT_DATE,
   data_validade  DATE,
   criado_em      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  atualizado_em  TIMESTAMPTZ,
+  atualizado_em  TIMESTAMPTZ NULL,
   version        INT NOT NULL DEFAULT 0
 );
 
@@ -114,7 +115,7 @@ CREATE TABLE IF NOT EXISTS tb_pedido (
   data_entrega_prevista DATE,
   data_entrega          DATE,
   criado_em             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  atualizado_em         TIMESTAMPTZ,
+  atualizado_em         TIMESTAMPTZ NULL,
   version               INT NOT NULL DEFAULT 0
 );
 

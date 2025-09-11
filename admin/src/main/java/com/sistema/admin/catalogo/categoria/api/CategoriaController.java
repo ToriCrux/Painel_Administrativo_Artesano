@@ -38,7 +38,7 @@ public class CategoriaController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public void deletar(@PathVariable Long id) {
-        service.deletar(id);
+    public void deletar(@PathVariable @Valid Long id) {
+        service.desativar(id);
     }
 }
