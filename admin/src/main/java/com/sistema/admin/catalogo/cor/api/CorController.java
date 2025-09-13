@@ -36,7 +36,7 @@ public class CorController {
         return service.atualizar(id, dto);
     }
 
-    @PutMapping("/{id}")
+    @PutMapping("/{id}/desativar")
     @PreAuthorize("hasRole('ADMIN')")
     public void desativar(@PathVariable Long id) {
         service.desativar(id);

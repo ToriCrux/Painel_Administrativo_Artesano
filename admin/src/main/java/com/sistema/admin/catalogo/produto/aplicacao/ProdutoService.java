@@ -1,5 +1,6 @@
 package com.sistema.admin.catalogo.produto.aplicacao;
 
+import com.sistema.admin.Estoque.aplicacao.EstoqueService;
 import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
 import com.sistema.admin.catalogo.categoria.infra.CategoriaRepository;
 import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
@@ -27,6 +28,9 @@ public class ProdutoService {
     private final CategoriaRepository categoriaRepository;
     private final CorRepository corRepository;
 
+    private final EstoqueService estoqueService;
+
+
     public Page<ProdutoResponse> listar(String nome, Pageable pageable) {
         var page = (nome != null && !nome.isBlank())
                 ? produtoRepository.findByNomeContainingIgnoreCase(nome, pageable)
@@ -41,7 +45,6 @@ public class ProdutoService {
 
         var categoria = categoriaRepository.findByNomeIgnoreCase(produtoRequest.categoriaNome())
                 .orElseThrow(() -> new NotFoundException("Categoria não encontrada: " + produtoRequest.categoriaNome()));
-
 
         var cores = produtoRequest.corIds().stream()
                 .map(id -> corRepository.findById(id)
@@ -58,8 +61,16 @@ public class ProdutoService {
                 .ativo(produtoRequest.ativo())
                 .build();
 
-        return toResponse(produtoRepository.save(produto));
+        // 1. Salva o produto
+        var produtoSalvo = produtoRepository.save(produto);
+
+        // 2. Cria estoque inicial (quantidade = 0) para o produto
+        estoqueService.criarEstoqueParaProduto(produtoSalvo);
+
+        // 3. Retorna o response do produto
+        return toResponse(produtoSalvo);
     }
+
 
     public ProdutoResponse atualizar(Long id, ProdutoRequest dto) {
         var produto = produtoRepository.findById(id)
