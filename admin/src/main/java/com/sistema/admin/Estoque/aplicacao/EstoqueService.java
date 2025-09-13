@@ -15,16 +15,10 @@ public class EstoqueService {
 
     private final EstoqueRepository repository;
 
-    /**
-     * Lista todos os estoques cadastrados.
-     */
     public List<Estoque> listarTodos() {
         return repository.findAll();
     }
 
-    /**
-     * Busca o estoque pelo ID do produto.
-     */
     public Estoque buscarPorProduto(Long produtoId) {
         return repository.findByProdutoId(produtoId)
                 .orElseThrow(() -> new EntityNotFoundException(
@@ -32,18 +26,12 @@ public class EstoqueService {
                 ));
     }
 
-    /**
-     * Atualiza a quantidade de um produto em estoque.
-     */
     public Estoque atualizarQuantidade(Long produtoId, Integer novaQuantidade) {
         Estoque estoque = buscarPorProduto(produtoId);
         estoque.setQuantidadeAtual(novaQuantidade);
         return repository.save(estoque);
     }
 
-    /**
-     * Cria estoque inicial para um novo produto.
-     */
     public Estoque criarEstoqueParaProduto(Produto produto) {
         Estoque estoque = Estoque.builder()
                 .produto(produto)
@@ -53,9 +41,6 @@ public class EstoqueService {
         return repository.save(estoque);
     }
 
-    /**
-     * Remove o estoque de um produto (ex.: quando produto é deletado).
-     */
     public void deletarPorProduto(Long produtoId) {
         Estoque estoque = buscarPorProduto(produtoId);
         repository.delete(estoque);

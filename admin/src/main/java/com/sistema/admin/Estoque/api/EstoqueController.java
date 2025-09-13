@@ -19,9 +19,7 @@ public class EstoqueController {
 
     private final EstoqueService service;
 
-    /**
-     * Lista todos os estoques.
-     */
+
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public List<EstoqueResponse> listar() {
@@ -31,9 +29,6 @@ public class EstoqueController {
                 .collect(Collectors.toList());
     }
 
-    /**
-     * Consulta o estoque de um produto pelo ID do produto.
-     */
     @GetMapping("/{produtoId}")
     @PreAuthorize("isAuthenticated()")
     public EstoqueResponse buscarPorProduto(@PathVariable Long produtoId) {
@@ -41,9 +36,6 @@ public class EstoqueController {
         return toResponse(estoque);
     }
 
-    /**
-     * Atualiza a quantidade de estoque de um produto.
-     */
     @PutMapping("/{produtoId}")
     @PreAuthorize("hasRole('ADMIN')")
     public EstoqueResponse atualizarQuantidade(@PathVariable Long produtoId,
@@ -52,9 +44,6 @@ public class EstoqueController {
         return toResponse(estoque);
     }
 
-    /**
-     * Converte entidade para DTO de resposta.
-     */
     private EstoqueResponse toResponse(Estoque estoque) {
         return EstoqueResponse.builder()
                 .produtoId(estoque.getProduto().getId())

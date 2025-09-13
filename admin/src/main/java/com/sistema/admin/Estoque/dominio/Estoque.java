@@ -19,10 +19,6 @@ public class Estoque {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    /**
-     * Relacionamento direto com Produto.
-     * Cada produto terá no máximo 1 estoque vinculado.
-     */
     @OneToOne(optional = false)
     @JoinColumn(name = "produto_id", nullable = false, unique = true)
     private Produto produto;
@@ -33,9 +29,6 @@ public class Estoque {
     @Column(nullable = false)
     private OffsetDateTime atualizadoEm;
 
-    /**
-     * Define data de criação e atualização automaticamente.
-     */
     @PrePersist
     public void prePersist() {
         this.atualizadoEm = OffsetDateTime.now();

@@ -8,9 +8,5 @@ import java.util.Optional;
 
 public interface EstoqueRepository extends JpaRepository<Estoque, Long> {
 
-    /**
-     * Busca o estoque vinculado a um produto específico.
-     * Útil para consultar ou atualizar o estoque a partir do produto.
-     */
     Optional<Estoque> findByProdutoId(Long produtoId);
 }
