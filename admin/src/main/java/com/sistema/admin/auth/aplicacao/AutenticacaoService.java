@@ -43,7 +43,7 @@ public class AutenticacaoService {
         final String senha = Objects.requireNonNull(loginResponse.senha(), "senha é obrigatória");
 
         Usuario usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new BadCredentialsException("Credenciais inválidas."));
+                .orElseThrow(() -> new EntityNotFoundException("Credenciais inválidas."));
 
         if (!passwordEncoder.matches(senha, usuario.getPasswordHash())) {
             throw new BadCredentialsException("Credenciais inválidas.");

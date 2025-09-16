@@ -7,6 +7,7 @@ import com.sistema.admin.auth.api.dto.UsuarioResponse;
 import com.sistema.admin.auth.aplicacao.AutenticacaoService;
 import com.sistema.admin.auth.dominio.Usuario;
 import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,13 +16,10 @@ import java.util.Collection;
 
 @RestController
 @RequestMapping("/api/v1/auth")
+@RequiredArgsConstructor
 public class AutenticacaoController {
 
     private final AutenticacaoService autenticacaoService;
-
-    public AutenticacaoController(AutenticacaoService autenticacaoService) {
-        this.autenticacaoService = autenticacaoService;
-    }
 
     @GetMapping("/users")
     public ResponseEntity<Collection<Usuario>> listar() {
@@ -29,8 +27,8 @@ public class AutenticacaoController {
     }
 
     @PostMapping("/register")
-    public ResponseEntity<?> registrar(@RequestBody @Valid RegistroResponse registroResposta) {
-        UsuarioResponse usuario = autenticacaoService.registrar(registroResposta);
+    public ResponseEntity<?> registrar(@RequestBody @Valid RegistroResponse registroResponse) {
+        UsuarioResponse usuario = autenticacaoService.registrar(registroResponse);
 
         if (usuario != null) {
             return ResponseEntity.status(HttpStatus.CREATED).body(usuario);
