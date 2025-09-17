@@ -1,11 +1,13 @@
 package com.sistema.admin.catalogo.cor.aplicacao;
 
 
+import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
 import com.sistema.admin.catalogo.categoria.dominio.Categoria;
 import com.sistema.admin.catalogo.cor.dominio.Cor;
 import com.sistema.admin.catalogo.cor.infra.CorRepository;
 import com.sistema.admin.catalogo.cor.api.dto.CorRequest;
 import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
+import com.sistema.admin.config.exception.ConflictException;
 import com.sistema.admin.config.exception.NotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
@@ -29,40 +31,43 @@ public class CorService {
         return cores.map(this::toResponse);
     }
 
-    public CorResponse salvar(CorRequest dto) {
-        corRepository.findByNomeIgnoreCase(dto.nome())
-                .ifPresent(c -> { throw new IllegalArgumentException("Cor já existe"); });
-
-        Cor nova = toEntity(dto);
-        Cor salva = corRepository.save(nova);
-        return toResponse(salva);
+    public CorResponse listarPorId(Long id) {
+        Cor cor = corRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Cor não encontrada para este id"));
+        return toResponse(cor);
     }
 
-    public CorResponse atualizar(Long id, CorRequest dto) {
-        Cor existente = corRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Cor não encontrada"));
+    public CorResponse salvar(CorRequest corRequest) {
+        corRepository.findByNomeIgnoreCase(corRequest.nome())
+                .orElseThrow(() -> new ConflictException("Cor existente para este nome."));
 
-        if (!existente.getNome().equalsIgnoreCase(dto.nome())) {
-            corRepository.findByNomeIgnoreCase(dto.nome())
-                    .ifPresent(c -> { throw new IllegalArgumentException("Cor já existe"); });
+        Cor novaCor = toEntity(corRequest);
+        return toResponse(corRepository.save(novaCor));
+    }
+
+    public CorResponse atualizar(Long id, CorRequest corRequest) {
+        Cor existente = corRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Cor não encontrada para este id."));
+
+        if (!existente.getNome().equalsIgnoreCase(corRequest.nome())) {
+            corRepository.findByNomeIgnoreCase(corRequest.nome())
+                    .ifPresent(c -> { throw new ConflictException("Cor já existe"); });
         }
 
-        existente.setNome(dto.nome());
-        existente.setHex(dto.hex());
-        existente.setAtivo(dto.ativo());
+        existente.setNome(corRequest.nome());
+        existente.setHex(corRequest.hex());
+        existente.setAtivo(corRequest.ativo());
 
-        Cor atualizado = corRepository.save(existente);
-        return toResponse(atualizado);
+        return toResponse(corRepository.save(existente));
     }
 
-    public void desativar(Long id) {
+    public CorResponse desativar(Long id) {
         Cor cor = corRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Cor não encontrada"));
-        cor.setAtivo(false); // soft delete
-        corRepository.save(cor);
+        cor.setAtivo(false);
+        return toResponse(corRepository.save(cor));
     }
 
-    // hard delete
     public void deletar(Long id) {
         Cor cor = corRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Cor não encontrada"));
@@ -82,11 +87,11 @@ public class CorService {
     }
 
     // usar @Mapper é mais DDD friendly
-    private Cor toEntity(CorRequest dto) {
+    private Cor toEntity(CorRequest corRequest) {
         return Cor.builder()
-                .nome(dto.nome())
-                .hex(dto.hex())
-                .ativo(dto.ativo() != null ? dto.ativo() : true)
+                .nome(corRequest.nome())
+                .hex(corRequest.hex())
+                .ativo(corRequest.ativo() != null ? corRequest.ativo() : true)
                 .build();
     }
 }

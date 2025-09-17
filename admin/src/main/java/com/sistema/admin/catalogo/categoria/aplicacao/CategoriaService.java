@@ -26,6 +26,12 @@ public class CategoriaService {
         return page.map(this::toResponse);
     }
 
+    public CategoriaResponse listarPorId(Long id) {
+        Categoria categoria = categoriaRepository.findById(id)
+                .orElseThrow(() -> new NotFoundException("Categoria não encontrada para este id"));
+        return toResponse(categoria);
+    }
+
     public CategoriaResponse salvar(CategoriaRequest categoriaRequest) {
         categoriaRepository.findByNomeIgnoreCase(categoriaRequest.nome())
                 .ifPresent(c -> { throw new ConflictException("Categoria já existe"); });
@@ -52,11 +58,11 @@ public class CategoriaService {
         return toResponse(categoriaRepository.save(existente));
     }
 
-    public void desativar(Long id) {
+    public CategoriaResponse desativar(Long id) {
         Categoria categoria = categoriaRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Categoria não encontrada"));
         categoria.setAtivo(false); // soft delete
-        categoriaRepository.save(categoria);
+        return toResponse(categoriaRepository.save(categoria));
     }
 
     // hard delete
@@ -76,4 +82,5 @@ public class CategoriaService {
                 categoria.getAtualizadoEm()
         );
     }
+
 }

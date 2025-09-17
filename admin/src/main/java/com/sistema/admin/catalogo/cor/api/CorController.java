@@ -1,13 +1,17 @@
 package com.sistema.admin.catalogo.cor.api;
 
+import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
 import com.sistema.admin.catalogo.cor.aplicacao.CorService;
 
 import com.sistema.admin.catalogo.cor.api.dto.CorRequest;
 import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -16,35 +20,51 @@ import org.springframework.web.bind.annotation.*;
 @RequiredArgsConstructor
 public class CorController {
 
-    private final CorService service;
+    private final CorService corService;
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public Page<CorResponse> listar(@RequestParam(required = false) String nome, Pageable pageable) {
-        return service.listar(nome, pageable);
+    public ResponseEntity<Page<CorResponse>> listarCores(
+            @RequestParam(required = false) String nome,
+            @ParameterObject Pageable pageable) {
+
+        Page<CorResponse> page = corService.listar(nome, pageable);
+
+        if (page.isEmpty()) return ResponseEntity.noContent().build();
+
+        return ResponseEntity.ok(page);
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<CorResponse> listarCorPorId(@PathVariable("id") Long id) {
+        CorResponse cor = corService.listarPorId(id);
+        if (cor == null) return ResponseEntity.notFound().build();
+        return ResponseEntity.ok(cor);
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
-    public CorResponse salvar(@RequestBody @Valid CorRequest dto) {
-        return service.salvar(dto);
+    public ResponseEntity<CorResponse> salvarCor(@RequestBody @Valid CorRequest corRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(corService.salvar(corRequest));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public CorResponse atualizar(@PathVariable Long id, @RequestBody @Valid CorRequest dto) {
-        return service.atualizar(id, dto);
+    public ResponseEntity<CorResponse> atualizarCor(@PathVariable Long id, @RequestBody @Valid CorRequest corRequest) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(corService.atualizar(id, corRequest));
     }
 
-    @PutMapping("/{id}/desativar")
+    @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMIN')")
-    public void desativar(@PathVariable Long id) {
-        service.desativar(id);
+    public ResponseEntity<CorResponse> desativar(@PathVariable Long id) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(corService.desativar(id));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
-    public void deletar(@PathVariable Long id) {
-        service.deletar(id);
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
+        corService.deletar(id);
+        return ResponseEntity.noContent().build();
     }
 }
