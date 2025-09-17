@@ -1,9 +1,7 @@
 package com.sistema.admin;
 
-import com.sistema.admin.Estoque.aplicacao.EstoqueService;
-import com.sistema.admin.Estoque.infra.EstoqueRepository;
-import com.sistema.admin.auth.api.dto.RegistroResponse;
-import com.sistema.admin.auth.api.dto.UsuarioResponse;
+import com.sistema.admin.estoque.aplicacao.EstoqueService;
+import com.sistema.admin.estoque.infra.EstoqueRepository;
 import com.sistema.admin.auth.aplicacao.AutenticacaoService;
 import com.sistema.admin.auth.dominio.Role;
 import com.sistema.admin.auth.dominio.Usuario;
@@ -17,13 +15,11 @@ import com.sistema.admin.catalogo.produto.aplicacao.ProdutoService;
 import com.sistema.admin.catalogo.produto.infra.ProdutoRepository;
 import com.sistema.admin.config.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
-import java.io.*;
 import java.util.*;
 
 @Component
