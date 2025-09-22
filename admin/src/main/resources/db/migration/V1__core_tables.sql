@@ -72,56 +72,58 @@ CREATE TABLE IF NOT EXISTS tb_usuario_role (
   PRIMARY KEY (usuario_id, role_id)
 );
 
------------- Cliente / Proposta / Pedido ------------
+------------ Cliente ------------
 CREATE TABLE IF NOT EXISTS tb_cliente (
   id            BIGSERIAL PRIMARY KEY,
-  nome          VARCHAR(160) NOT NULL,
+  nome          VARCHAR(120) NOT NULL,
   cpf_cnpj      VARCHAR(20)  NOT NULL UNIQUE,
-  email         VARCHAR(160) NOT NULL UNIQUE,
-  telefone      VARCHAR(30),
-  cep           VARCHAR(15),
-  endereco      VARCHAR(160),
+  telefone      VARCHAR(15),
+  email         VARCHAR(120) NOT NULL,
+  cep           VARCHAR(10),
+  endereco      VARCHAR(150),
   numero        VARCHAR(20),
-  complemento   VARCHAR(80),
+  complemento   VARCHAR(100),
   bairro        VARCHAR(80),
   cidade        VARCHAR(80),
   uf            VARCHAR(2),
-  referencia    VARCHAR(160),
+  referencia    VARCHAR(150),
   criado_em     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  atualizado_em TIMESTAMPTZ NULL
+);
+
+CREATE INDEX IF NOT EXISTS ix_cliente_nome ON tb_cliente (nome);
+CREATE INDEX IF NOT EXISTS ix_cliente_cpf_cnpj ON tb_cliente (cpf_cnpj);
+
+------------ Proposta ------------
+CREATE TABLE IF NOT EXISTS tb_proposta (
+  id             BIGSERIAL PRIMARY KEY,
+  cliente_id     BIGINT NOT NULL REFERENCES tb_cliente(id) ON DELETE CASCADE,
+  codigo         VARCHAR(50) NOT NULL UNIQUE,
+  nome_vendedor  VARCHAR(120) NOT NULL,
+  data_proposta  DATE NOT NULL,
+  data_validade  DATE NOT NULL,
+  total          NUMERIC(15,2) NOT NULL DEFAULT 0,
+  criado_em      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   atualizado_em  TIMESTAMPTZ NULL
 );
 
-CREATE TABLE IF NOT EXISTS tb_proposta (
+CREATE INDEX IF NOT EXISTS ix_proposta_codigo ON tb_proposta (codigo);
+
+------------ Produto da Proposta ------------
+CREATE TABLE IF NOT EXISTS tb_produto_proposta (
   id             BIGSERIAL PRIMARY KEY,
-  id_cliente     BIGINT REFERENCES tb_cliente(id),
-  id_usuario     BIGINT,
-  status         VARCHAR(12) NOT NULL,
-  total          NUMERIC(12,2) NOT NULL DEFAULT 0,
-  data_proposta  DATE NOT NULL DEFAULT CURRENT_DATE,
-  data_validade  DATE,
-  criado_em      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  atualizado_em  TIMESTAMPTZ NULL,
-  version        INT NOT NULL DEFAULT 0
+  proposta_id    BIGINT NOT NULL REFERENCES tb_proposta(id) ON DELETE CASCADE,
+  codigo_produto VARCHAR(50) NOT NULL,
+  nome_produto   VARCHAR(150) NOT NULL,
+  quantidade     INT NOT NULL CHECK (quantidade > 0),
+  preco_unitario NUMERIC(15,2) NOT NULL CHECK (preco_unitario >= 0),
+  subtotal       NUMERIC(15,2) NOT NULL DEFAULT 0
 );
 
-CREATE TABLE IF NOT EXISTS tb_pedido (
-  id                    BIGSERIAL PRIMARY KEY,
-  id_proposta           BIGINT REFERENCES tb_proposta(id),
-  id_cliente            BIGINT NOT NULL REFERENCES tb_cliente(id),
-  id_usuario            BIGINT,
-  status                VARCHAR(12) NOT NULL,
-  total                 NUMERIC(12,2) NOT NULL DEFAULT 0,
-  data_pedido           TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  data_entrega_prevista DATE,
-  data_entrega          DATE,
-  criado_em             TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  atualizado_em         TIMESTAMPTZ NULL,
-  version               INT NOT NULL DEFAULT 0
-);
+CREATE INDEX IF NOT EXISTS ix_produto_proposta_codigo ON tb_produto_proposta (codigo_produto);
+CREATE INDEX IF NOT EXISTS ix_produto_proposta_proposta ON tb_produto_proposta (proposta_id);
 
 ------------ Índices úteis ------------
-CREATE INDEX IF NOT EXISTS idx_usuario_email        ON tb_usuario(email);
-CREATE INDEX IF NOT EXISTS idx_cliente_nome         ON tb_cliente(nome);
-CREATE INDEX IF NOT EXISTS idx_cliente_cidade       ON tb_cliente(cidade);
-CREATE INDEX IF NOT EXISTS idx_proposta_status_data ON tb_proposta(status, data_proposta);
-CREATE INDEX IF NOT EXISTS idx_pedido_status_data   ON tb_pedido(status, data_pedido);
+CREATE INDEX IF NOT EXISTS idx_usuario_email ON tb_usuario(email);
+CREATE INDEX IF NOT EXISTS idx_cliente_nome ON tb_cliente(nome);
+CREATE INDEX IF NOT EXISTS idx_cliente_cidade ON tb_cliente(cidade);

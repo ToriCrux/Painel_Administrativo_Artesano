@@ -16,7 +16,4 @@ VALUES
  ('TL-003', 'Ladrilho Siena',   (SELECT id FROM tb_categoria WHERE nome = 'Florais'),    '20x20', 59.90, TRUE)
 ON CONFLICT DO NOTHING;
 
--- Cliente demo
-INSERT INTO tb_cliente (nome, cpf_cnpj, email, telefone, cep, cidade, uf)
-VALUES ('Cliente Demo', '12345678000199', 'cliente@demo.com', '(11) 99999-0000', '01000-000', 'São Paulo', 'SP')
-ON CONFLICT DO NOTHING;
+
