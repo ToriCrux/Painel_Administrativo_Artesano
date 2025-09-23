@@ -24,5 +24,7 @@ public record ProdutoRequest(
         BigDecimal precoUnitario,
 
         @NotNull
-        Boolean ativo
+        Boolean ativo,
+
+        String descricao
 ) {}

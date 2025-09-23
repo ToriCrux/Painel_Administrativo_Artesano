@@ -47,6 +47,9 @@ public class Produto {
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal precoUnitario;
 
+    @Column(length = 500)
+    private String descricao;
+
     @Builder.Default
     private Boolean ativo = true;
 

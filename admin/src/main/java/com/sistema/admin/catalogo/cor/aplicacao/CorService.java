@@ -1,8 +1,5 @@
 package com.sistema.admin.catalogo.cor.aplicacao;
 
-
-import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
-import com.sistema.admin.catalogo.categoria.dominio.Categoria;
 import com.sistema.admin.catalogo.cor.dominio.Cor;
 import com.sistema.admin.catalogo.cor.infra.CorRepository;
 import com.sistema.admin.catalogo.cor.api.dto.CorRequest;
@@ -38,8 +35,9 @@ public class CorService {
     }
 
     public CorResponse salvar(CorRequest corRequest) {
+        // Verifica se já existe cor com o mesmo nome
         corRepository.findByNomeIgnoreCase(corRequest.nome())
-                .orElseThrow(() -> new ConflictException("Cor existente para este nome."));
+                .ifPresent(c -> { throw new ConflictException("Cor existente para este nome."); });
 
         Cor novaCor = toEntity(corRequest);
         return toResponse(corRepository.save(novaCor));
