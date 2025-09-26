@@ -17,5 +17,7 @@ public record ProdutoResponse(
         BigDecimal precoUnitario,
         Boolean ativo,
         OffsetDateTime criadoEm,
-        OffsetDateTime atualizadoEm
+        OffsetDateTime atualizadoEm,
+
+        String descricao
 ) {}

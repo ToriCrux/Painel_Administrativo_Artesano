@@ -10,6 +10,6 @@ import java.time.OffsetDateTime;
 public class EstoqueResponse {
     private Long produtoId;
     private Long saldo;
-    private Long versao; // do @Version
+    private Long versao;
     private OffsetDateTime atualizadoEm;
 }

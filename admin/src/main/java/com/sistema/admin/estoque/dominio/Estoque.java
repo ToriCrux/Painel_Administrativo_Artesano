@@ -1,15 +1,16 @@
 package com.sistema.admin.estoque.dominio;
 
-import com.sistema.admin.catalogo.produto.dominio.Produto;
 import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.OffsetDateTime;
 
 @Entity
-@Table(name = "tb_estoque",
+@Table(
+        name = "tb_estoque",
         uniqueConstraints = @UniqueConstraint(name = "uk_estoque_produto", columnNames = "produto_id"),
-        indexes = @Index(name = "ix_estoque_produto", columnList = "produto_id"))
+        indexes = @Index(name = "ix_estoque_produto", columnList = "produto_id")
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -35,11 +36,15 @@ public class Estoque {
     @Column(nullable = false)
     private OffsetDateTime atualizadoEm;
 
+    // Inicializa timestamps ao criar registro
     @PrePersist
     public void prePersist() {
-        this.criadoEm = OffsetDateTime.now();
+        var now = OffsetDateTime.now();
+        this.criadoEm = now;
+        this.atualizadoEm = now; // 👈 garante valor no insert
     }
 
+    // Atualiza timestamp sempre que houver update
     @PreUpdate
     public void preUpdate() {
         this.atualizadoEm = OffsetDateTime.now();
@@ -59,12 +64,15 @@ public class Estoque {
     }
 
     public void ajustar(long novoSaldo) {
-        if (novoSaldo < 0) throw new IllegalArgumentException("Saldo não pode ser negativo");
+        if (novoSaldo < 0) {
+            throw new IllegalArgumentException("Saldo não pode ser negativo");
+        }
         this.saldo = novoSaldo;
     }
 
     private void validarQuantidade(long qtd) {
-        if (qtd <= 0) throw new IllegalArgumentException("Quantidade deve ser positiva");
+        if (qtd <= 0) {
+            throw new IllegalArgumentException("Quantidade deve ser positiva");
+        }
     }
 }
-

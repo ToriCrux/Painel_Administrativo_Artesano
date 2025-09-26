@@ -6,7 +6,6 @@ import com.sistema.admin.catalogo.categoria.infra.CategoriaRepository;
 import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
 import com.sistema.admin.catalogo.cor.infra.CorRepository;
 import com.sistema.admin.catalogo.produto.dominio.Produto;
-
 import com.sistema.admin.catalogo.produto.infra.ProdutoRepository;
 import com.sistema.admin.catalogo.produto.api.dto.ProdutoRequest;
 import com.sistema.admin.catalogo.produto.api.dto.ProdutoResponse;
@@ -64,15 +63,11 @@ public class ProdutoService {
                 .medidas(produtoRequest.medidas())
                 .precoUnitario(produtoRequest.precoUnitario())
                 .ativo(produtoRequest.ativo())
+                .descricao(produtoRequest.descricao()) // ✅ mapeado
                 .build();
 
-        // 1. Salva o produto
         var produtoSalvo = produtoRepository.save(produto);
-
-        // 2. Cria estoque inicial (quantidade = 0) para o produto
         estoqueService.criarEstoqueParaProduto(produtoSalvo.getId());
-
-        // 3. Retorna o response do produto
         return toResponse(produtoSalvo);
     }
 
@@ -89,7 +84,6 @@ public class ProdutoService {
         var categoria = categoriaRepository.findByNomeIgnoreCase(produtoRequest.categoriaNome())
                 .orElseThrow(() -> new EntityNotFoundException("Categoria não encontrada: " + produtoRequest.categoriaNome()));
 
-
         var cores = produtoRequest.corIds().stream()
                 .map(corId -> corRepository.findById(corId)
                         .orElseThrow(() -> new EntityNotFoundException("Cor não encontrada: " + corId)))
@@ -102,6 +96,7 @@ public class ProdutoService {
         produto.setMedidas(produtoRequest.medidas());
         produto.setPrecoUnitario(produtoRequest.precoUnitario());
         produto.setAtivo(produtoRequest.ativo());
+        produto.setDescricao(produtoRequest.descricao()); // ✅ atualização
 
         return toResponse(produtoRepository.save(produto));
     }
@@ -109,7 +104,7 @@ public class ProdutoService {
     public ProdutoResponse desativar(Long id) {
         var produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
-        produto.setAtivo(false); // soft delete
+        produto.setAtivo(false);
         return toResponse(produtoRepository.save(produto));
     }
 
@@ -119,7 +114,6 @@ public class ProdutoService {
         produtoRepository.deleteById(produto.getId());
     }
 
-    // usar @Mapper é mais DDD friendly
     private ProdutoResponse toResponse(Produto produto) {
         return new ProdutoResponse(
                 produto.getId(),
@@ -142,7 +136,8 @@ public class ProdutoService {
                 produto.getPrecoUnitario(),
                 produto.getAtivo(),
                 produto.getCriadoEm(),
-                produto.getAtualizadoEm()
+                produto.getAtualizadoEm(),
+                produto.getDescricao() // ✅ incluído no response
         );
     }
 }
