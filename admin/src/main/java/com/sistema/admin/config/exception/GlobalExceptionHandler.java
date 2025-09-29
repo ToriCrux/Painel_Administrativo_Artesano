@@ -35,8 +35,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<?> handleValidation(MethodArgumentNotValidException ex) {
         var errors = ex.getBindingResult().getFieldErrors().stream()
-                .map(f -> f.getField()+": "+f.getDefaultMessage()).toList();
-        return ResponseEntity.badRequest().body(problem(400, "Validation error", Map.of("errors", errors)));
+                .map(f -> f.getField() + ": " + f.getDefaultMessage())
+                .toList();
+
+        return ResponseEntity.badRequest()
+                .body(problem(400, "Validation error", Map.of("errors", errors)));
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
@@ -48,14 +51,21 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<?> handleGeneric(Exception ex) {
+        // Loga o stacktrace completo no console (útil para debug)
+        ex.printStackTrace();
+
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(problem(500, "Unexpected error"));
+                .body(problem(500, "Unexpected error", Map.of(
+                        "message", ex.getMessage(),
+                        "exception", ex.getClass().getName()
+                )));
     }
 
-    private Map<String,Object> problem(int status, String title) {
+    private Map<String, Object> problem(int status, String title) {
         return problem(status, title, Map.of());
     }
-    private Map<String,Object> problem(int status, String title, Map<String,Object> extra) {
+
+    private Map<String, Object> problem(int status, String title, Map<String, Object> extra) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("timestamp", OffsetDateTime.now().toString());
         body.put("status", status);

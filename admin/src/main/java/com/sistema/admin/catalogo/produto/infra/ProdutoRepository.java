@@ -3,12 +3,23 @@ package com.sistema.admin.catalogo.produto.infra;
 import com.sistema.admin.catalogo.produto.dominio.Produto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.Optional;
 
 public interface ProdutoRepository extends JpaRepository<Produto, Long> {
+
     Optional<Produto> findByCodigoIgnoreCase(String codigo);
 
+    @EntityGraph(attributePaths = {"categoria", "cores"})
     Page<Produto> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = {"categoria", "cores"})
+    Page<Produto> findAll(Pageable pageable);
+
+    @Override
+    @EntityGraph(attributePaths = {"categoria", "cores"})
+    Optional<Produto> findById(Long id);
 }

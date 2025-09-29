@@ -12,7 +12,7 @@ public record ProdutoRequest(
         @NotBlank @Size(max = 120)
         String nome,
 
-        @NotBlank @Size(max = 100)  // agora espera nome da categoria
+        @NotBlank @Size(max = 100)
         String categoriaNome,
 
         Set<Long> corIds,

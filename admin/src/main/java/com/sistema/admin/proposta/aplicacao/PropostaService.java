@@ -32,15 +32,12 @@ public class PropostaService {
     }
 
     public Proposta salvar(Proposta proposta) {
-        // ✅ Busca cliente já existente pelo CPF/CNPJ
         String cpfCnpj = proposta.getCliente().getCpfCnpj();
         Cliente clienteExistente = clienteRepository.findByCpfCnpj(cpfCnpj)
                 .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado com CPF/CNPJ: " + cpfCnpj));
 
-        // Reutiliza cliente existente
         proposta.setCliente(clienteExistente);
 
-        // Recalcula total e salva
         proposta.recalcularTotal();
         return repository.save(proposta);
     }

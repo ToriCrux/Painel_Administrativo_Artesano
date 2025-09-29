@@ -65,14 +65,12 @@ public class CategoriaService {
         return toResponse(categoriaRepository.save(categoria));
     }
 
-    // hard delete
     public void deletar(Long id) {
         Categoria categoria = categoriaRepository.findById(id)
                 .orElseThrow(() -> new NotFoundException("Categoria não encontrada"));
         categoriaRepository.delete(categoria);
     }
 
-    // usar @Mapper é mais DDD friendly
     private CategoriaResponse toResponse(Categoria categoria) {
         return new CategoriaResponse(
                 categoria.getId(),
