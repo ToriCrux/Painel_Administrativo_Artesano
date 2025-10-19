@@ -13,10 +13,9 @@ class UsuarioResponseTest {
 	@Test
 	void getters_equals_hashcode_toString() {
 		Set<String> roles1 = new LinkedHashSet<>(Set.of("ROLE_USER", "ROLE_ADMIN"));
-		Set<String> roles2 = new LinkedHashSet<>(Set.of("ROLE_USER", "ROLE_ADMIN"));
 
 		UsuarioResponse u1 = new UsuarioResponse(1L, "Ana", "ana@example.com", true, roles1);
-		UsuarioResponse u2 = new UsuarioResponse(1L, "Ana", "ana@example.com", true, roles2);
+		UsuarioResponse u2 = new UsuarioResponse(1L, "Ana", "ana@example.com", true, roles1);
 		UsuarioResponse u3 = new UsuarioResponse(2L, "Bruno", "bruno@example.com", true, Set.of("ROLE_USER"));
 
 		assertThat(u1.id()).isEqualTo(1L);

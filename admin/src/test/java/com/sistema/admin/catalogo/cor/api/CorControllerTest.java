@@ -1,9 +1,10 @@
-package com.sistema.admin.catalogo.categoria.api;
+package com.sistema.admin.catalogo.cor.api;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sistema.admin.catalogo.categoria.api.dto.CategoriaRequest;
-import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
-import com.sistema.admin.catalogo.categoria.aplicacao.CategoriaService;
+import com.sistema.admin.catalogo.cor.api.dto.CorRequest;
+import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
+import com.sistema.admin.catalogo.cor.aplicacao.CorService;
 import com.sistema.admin.config.TestSecurityConfig;
 import com.sistema.admin.config.jwt.JwtAuthenticationFilter;
 import com.sistema.admin.config.jwt.JwtUtil;
@@ -16,7 +17,10 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.context.annotation.Import;
-import org.springframework.data.domain.*;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -24,19 +28,19 @@ import java.time.OffsetDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
-
-@WebMvcTest(controllers = CategoriaController.class)
+@WebMvcTest(controllers = CorController.class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(TestSecurityConfig.class)
-class CategoriaControllerTest {
+class CorControllerTest {
 
 	@Autowired
 	MockMvc mvc;
@@ -45,7 +49,7 @@ class CategoriaControllerTest {
 	ObjectMapper om;
 
 	@MockBean
-	private CategoriaService categoriaService;
+	private CorService corService;
 
 	@MockBean
 	private JwtAuthenticationFilter jwtAuthenticationFilter;
@@ -53,9 +57,9 @@ class CategoriaControllerTest {
 	@Mock
 	private JwtUtil jwtUtil;
 
-	private static CategoriaResponse dto(long id, String nome, boolean ativo) {
-		return new CategoriaResponse(
-				id, nome, ativo,
+	private static CorResponse corResponse(long id, String nome, String hex, boolean ativo) {
+		return new CorResponse(
+				id, nome, hex, ativo,
 				OffsetDateTime.parse("2025-09-25T18:00:00-03:00"),
 				OffsetDateTime.parse("2025-09-25T18:30:00-03:00")
 		);
@@ -66,12 +70,12 @@ class CategoriaControllerTest {
 	void listar_ok() throws Exception {
 		var pageable = PageRequest.of(0, 2, Sort.by("nome").ascending());
 		var page = new PageImpl<>(
-				List.of(dto(1, "Insumos", true), dto(2, "Periféricos", true)),
+				List.of(corResponse(1, "Pale Dogwood", "#C5AFA4", true), corResponse(2, "Robin Egg Blue", "#55DDE0", true)),
 				pageable, 2);
 
-		when(categoriaService.listar(any(), any(Pageable.class))).thenReturn(page);
+		when(corService.listar(any(), any(Pageable.class))).thenReturn(page);
 
-		mvc.perform(get("/api/v1/categorias")
+		mvc.perform(get("/api/v1/cores")
 						.param("page", "0")
 						.param("size", "2")
 						.param("sort", "nome,asc")
@@ -80,96 +84,99 @@ class CategoriaControllerTest {
 				.andExpect(status().isOk())
 				.andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
 				.andExpect(jsonPath("$.content", hasSize(2)))
-				.andExpect(jsonPath("$.content[*].nome", containsInAnyOrder("Insumos", "Periféricos")))
+				.andExpect(jsonPath("$.content[*].nome", containsInAnyOrder("Pale Dogwood", "Robin Egg Blue")))
+				.andExpect(jsonPath("$.content[*].hex", containsInAnyOrder("#C5AFA4", "#55DDE0")))
 				.andExpect(jsonPath("$.totalElements").value(2));
 
 		ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-		verify(categoriaService).listar(isNull(), captor.capture()); // nome null
+		verify(corService).listar(isNull(), captor.capture()); // nome null
 		Pageable used = captor.getValue();
 		assertThat(used.getPageNumber()).isEqualTo(0);
 		assertThat(used.getPageSize()).isEqualTo(2);
 	}
 
 	@Test
-	@DisplayName("GET /categorias?nome=ins: 204 quando página vazia")
+	@DisplayName("GET /cores?nome=ins: 204 quando página vazia")
 	void listar_noContent() throws Exception {
 		var pageable = PageRequest.of(0, 10);
-		when(categoriaService.listar(eq("ins"), any(Pageable.class)))
+		when(corService.listar(eq("ins"), any(Pageable.class)))
 				.thenReturn(new PageImpl<>(List.of(), pageable, 0));
 
-		mvc.perform(get("/api/v1/categorias").param("nome","ins"))
+		mvc.perform(get("/api/v1/cores").param("nome","ins"))
 				.andExpect(status().isNoContent());
 	}
 
 	@Test
-	@DisplayName("GET /categorias/{id}: 200 quando encontrado")
+	@DisplayName("GET /cores/{id}: 200 quando encontrado")
 	void listarPorId_ok() throws Exception {
-		when(categoriaService.listarPorId(10L)).thenReturn(dto(10, "Insumos", true));
+		when(corService.listarPorId(10L)).thenReturn(corResponse(1, "Pale Dogwood", "#C5AFA4", true));
 
-		mvc.perform(get("/api/v1/categorias/{id}", 10))
+		mvc.perform(get("/api/v1/cores/{id}", 10))
 				.andExpect(status().isOk())
-				.andExpect(jsonPath("$.id").value(10))
-				.andExpect(jsonPath("$.nome").value("Insumos"));
+				.andExpect(jsonPath("$.id").value(1))
+				.andExpect(jsonPath("$.nome").value("Pale Dogwood"));
 	}
 
 	@Test
-	@DisplayName("POST /categorias: 201 com corpo")
+	@DisplayName("POST /cores: 201 com corpo")
 	void salvar_created() throws Exception {
-		var req = new CategoriaRequest("Periféricos", true);
-		when(categoriaService.salvar(any())).thenReturn(dto(50, "Periféricos", true));
+		var corRequest = new CorRequest("Robin Egg Blue", "#55DDE0", true);
+		when(corService.salvar(any())).thenReturn(corResponse(2, "Robin Egg Blue", "#55DDE0", true));
 
-		mvc.perform(post("/api/v1/categorias")
+		mvc.perform(post("/api/v1/cores")
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(om.writeValueAsString(req)))
+						.content(om.writeValueAsString(corRequest)))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.id").value(50))
-				.andExpect(jsonPath("$.nome").value("Periféricos"));
+				.andExpect(jsonPath("$.id").value(2))
+				.andExpect(jsonPath("$.nome").value("Robin Egg Blue"));
 	}
 
 	@Test
-	@DisplayName("POST /categorias: 400 quando payload inválido (nome em branco)")
+	@DisplayName("POST /cores: 400 quando payload inválido (nome em branco)")
 	void salvar_badRequest_validacao() throws Exception {
 		var reqJson = """
             {"nome":"   ","ativo":true}
         """;
-		mvc.perform(post("/api/v1/categorias")
+		mvc.perform(post("/api/v1/cores")
 						.contentType(MediaType.APPLICATION_JSON)
 						.content(reqJson))
 				.andExpect(status().isBadRequest());
-		verify(categoriaService, never()).salvar(any());
+		verify(corService, never()).salvar(any());
 	}
 
 	@Test
-	@DisplayName("PUT /categorias/{id}: 201 com corpo atualizado")
+	@DisplayName("PUT /cores/{id}: 201 com corpo atualizado")
 	void atualizar_created() throws Exception {
-		var req = new CategoriaRequest("Equipamentos", false);
-		when(categoriaService.atualizar(eq(10L), any())).thenReturn(dto(10, "Equipamentos", false));
+		var corRequest = new CorRequest("Robin Egg Blue", "#55DDE0", true);
+		when(corService.atualizar(eq(10L), any())).thenReturn(corResponse(2, "Robin Egg Blue", "#55DDE0", false));
 
-		mvc.perform(put("/api/v1/categorias/{id}", 10)
+		mvc.perform(put("/api/v1/cores/{id}", 10)
+						.with(jwt())
 						.contentType(MediaType.APPLICATION_JSON)
-						.content(om.writeValueAsString(req)))
+						.content(om.writeValueAsString(corRequest)))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.id").value(10))
-				.andExpect(jsonPath("$.nome").value("Equipamentos"))
+				.andExpect(jsonPath("$.id").value(2))
+				.andExpect(jsonPath("$.nome").value("Robin Egg Blue"))
 				.andExpect(jsonPath("$.ativo").value(false));
 	}
 
 	@Test
-	@DisplayName("PUT /categorias/{id}/status: 201 desativado")
+	@DisplayName("PUT /cores/{id}/status: 201 desativado")
 	void desativar_created() throws Exception {
-		when(categoriaService.desativar(7L)).thenReturn(dto(7, "Insumos", false));
+		when(corService.desativar(7L)).thenReturn(corResponse(2, "Robin Egg Blue", "#55DDE0", false));
 
-		mvc.perform(put("/api/v1/categorias/{id}/status", 7))
+		mvc.perform(put("/api/v1/cores/{id}/status", 7))
 				.andExpect(status().isCreated())
-				.andExpect(jsonPath("$.id").value(7))
+				.andExpect(jsonPath("$.id").value(2))
 				.andExpect(jsonPath("$.ativo").value(false));
 	}
 
 	@Test
-	@DisplayName("DELETE /categorias/{id}: 204")
+	@DisplayName("DELETE /cores/{id}: 204")
 	void deletar_noContent() throws Exception {
-		mvc.perform(delete("/api/v1/categorias/{id}", 99))
+		mvc.perform(delete("/api/v1/cores/{id}", 99))
 				.andExpect(status().isNoContent());
-		verify(categoriaService).deletar(99L);
+		verify(corService).deletar(99L);
 	}
+
 }
