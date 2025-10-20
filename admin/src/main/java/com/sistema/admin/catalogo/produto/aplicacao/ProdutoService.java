@@ -28,7 +28,6 @@ public class ProdutoService {
     private final CorRepository corRepository;
     private final EstoqueService estoqueService;
 
-
     public Page<ProdutoResponse> listar(String nome, Pageable pageable) {
         var page = (nome != null && !nome.isBlank())
                 ? produtoRepository.findByNomeContainingIgnoreCase(nome, pageable)
@@ -63,14 +62,13 @@ public class ProdutoService {
                 .medidas(produtoRequest.medidas())
                 .precoUnitario(produtoRequest.precoUnitario())
                 .ativo(produtoRequest.ativo())
-                .descricao(produtoRequest.descricao()) // ✅ mapeado
+                .descricao(produtoRequest.descricao())
                 .build();
 
         var produtoSalvo = produtoRepository.save(produto);
         estoqueService.criarEstoqueParaProduto(produtoSalvo.getId());
         return toResponse(produtoSalvo);
     }
-
 
     public ProdutoResponse atualizar(Long id, ProdutoRequest produtoRequest) {
         var produto = produtoRepository.findById(id)
@@ -96,7 +94,7 @@ public class ProdutoService {
         produto.setMedidas(produtoRequest.medidas());
         produto.setPrecoUnitario(produtoRequest.precoUnitario());
         produto.setAtivo(produtoRequest.ativo());
-        produto.setDescricao(produtoRequest.descricao()); // ✅ atualização
+        produto.setDescricao(produtoRequest.descricao());
 
         return toResponse(produtoRepository.save(produto));
     }
@@ -108,7 +106,7 @@ public class ProdutoService {
         return toResponse(produtoRepository.save(produto));
     }
 
-    public void deletar (Long id) {
+    public void deletar(Long id) {
         Produto produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
         produtoRepository.deleteById(produto.getId());
@@ -137,7 +135,7 @@ public class ProdutoService {
                 produto.getAtivo(),
                 produto.getCriadoEm(),
                 produto.getAtualizadoEm(),
-                produto.getDescricao() // ✅ incluído no response
+                produto.getDescricao()
         );
     }
 }

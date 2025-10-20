@@ -22,7 +22,7 @@ public class EstoqueController {
 
     private final EstoqueService estoqueService;
 
-    // Listar todos os estoques (com paginação e filtro opcional por produtoId)
+
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<EstoqueResponse>> listarEstoques(
@@ -36,7 +36,7 @@ public class EstoqueController {
         return ResponseEntity.ok(page);
     }
 
-    // Buscar estoque de um produto específico
+
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<EstoqueResponse> buscarPorProduto(@PathVariable Long id) {
@@ -44,7 +44,7 @@ public class EstoqueController {
         return ResponseEntity.ok(toResponse(estoque));
     }
 
-    // Ajustar saldo direto (define o valor exato do estoque)
+
     @PutMapping("/{id}/movimentacoes/ajuste")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EstoqueResponse> ajustarSaldo(
@@ -54,7 +54,7 @@ public class EstoqueController {
         return ResponseEntity.ok(toResponse(estoque));
     }
 
-    // Entrada (aumenta o estoque)
+
     @PostMapping("/{id}/movimentacoes/entrada")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EstoqueResponse> entrada(
@@ -64,7 +64,7 @@ public class EstoqueController {
         return ResponseEntity.ok(toResponse(estoque));
     }
 
-    // Saída (baixa o estoque)
+
     @PostMapping("/{id}/movimentacoes/saida")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<EstoqueResponse> saida(
@@ -74,7 +74,7 @@ public class EstoqueController {
         return ResponseEntity.ok(toResponse(estoque));
     }
 
-    // Histórico de movimentações
+
     @GetMapping("/{id}/movimentacoes")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<MovimentacaoEstoque>> listarMovimentacoes(@PathVariable Long id) {
@@ -83,7 +83,7 @@ public class EstoqueController {
         return ResponseEntity.ok(movimentacoes);
     }
 
-    // Mapper Estoque → EstoqueResponse
+
     private EstoqueResponse toResponse(Estoque estoque) {
         return EstoqueResponse.builder()
                 .produtoId(estoque.getProdutoId())

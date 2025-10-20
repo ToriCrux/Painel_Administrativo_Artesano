@@ -11,8 +11,8 @@ public record ProdutoResponse(
         Long id,
         String codigo,
         String nome,
-        CategoriaResponse categoria,   // aqui já devolvemos os detalhes da categoria
-        Set<CorResponse> cores,        // e aqui os detalhes das cores
+        CategoriaResponse categoria,
+        Set<CorResponse> cores,
         String medidas,
         BigDecimal precoUnitario,
         Boolean ativo,

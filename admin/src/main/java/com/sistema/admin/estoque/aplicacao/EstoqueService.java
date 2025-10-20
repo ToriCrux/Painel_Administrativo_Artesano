@@ -19,20 +19,19 @@ public class EstoqueService {
     private final EstoqueRepository repository;
     private final MovimentacaoEstoqueRepository movRepository;
 
-    // Lista estoques
+
     public Page<Estoque> listar(Long produtoId, Pageable pageable) {
         return (produtoId != null)
                 ? repository.findByProdutoId(produtoId, pageable)
                 : repository.findAll(pageable);
     }
 
-    // Busca estoque de um produto
+
     public Estoque buscarPorProduto(Long produtoId) {
         return repository.findByProdutoId(produtoId)
                 .orElseThrow(() -> new EntityNotFoundException("Estoque não encontrado para produto " + produtoId));
     }
 
-    // Ajusta saldo diretamente
     public Estoque ajustarSaldo(Long produtoId, Long novoSaldo) {
         var estoque = buscarPorProduto(produtoId);
         Long saldoAnterior = estoque.getSaldo();
@@ -45,7 +44,6 @@ public class EstoqueService {
         return salvo;
     }
 
-    // Entrada de estoque
     public Estoque aumentar(Long produtoId, Long qtd) {
         var e = buscarPorProduto(produtoId);
         Long saldoAnterior = e.getSaldo();
@@ -58,7 +56,6 @@ public class EstoqueService {
         return salvo;
     }
 
-    // Saída de estoque
     public Estoque baixar(Long produtoId, Long qtd) {
         var e = buscarPorProduto(produtoId);
         Long saldoAnterior = e.getSaldo();
@@ -71,7 +68,6 @@ public class EstoqueService {
         return salvo;
     }
 
-    // Criação inicial de estoque para produto
     public Estoque criarEstoqueParaProduto(Long produtoId) {
         var e = Estoque.builder()
                 .produtoId(produtoId)
@@ -85,17 +81,14 @@ public class EstoqueService {
         return salvo;
     }
 
-    // Deleta estoque de um produto
     public void deletarPorProduto(Long produtoId) {
         repository.findByProdutoId(produtoId).ifPresent(repository::delete);
     }
 
-    // Lista movimentações de um produto
     public List<MovimentacaoEstoque> listarMovimentacoes(Long produtoId) {
         return movRepository.findByProdutoIdOrderByCriadoEmDesc(produtoId);
     }
 
-    // Registra movimentação no histórico
     private void registrarMovimentacao(Long produtoId, String tipo, Long quantidade,
                                        Long saldoAnterior, Long saldoNovo) {
         MovimentacaoEstoque mov = MovimentacaoEstoque.builder()
