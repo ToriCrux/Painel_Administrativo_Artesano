@@ -1,0 +1,41 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5433/authentication_db
+    username: postgres
+    password: postgres
+#    username: admin_user
+#    password: admin_pass
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    enabled: true
+    url: jdbc:postgresql://localhost:5433/authentication_db
+    user: postgres
+    password: postgres
+#    user: admin_user
+#    password: admin_pass
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
+      hibernate.format_sql: true
+      hibernate.jdbc.time_zone: UTC
+    open-in-view: false
+
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: always
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+jwt:
+  secret: kKm5G2MIj9aMOK/y6v0tXpLHmv8nciqTmrLb+HlJk3k=
+  expiration: 28800
