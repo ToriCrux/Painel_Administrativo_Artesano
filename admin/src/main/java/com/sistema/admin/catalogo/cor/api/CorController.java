@@ -1,6 +1,5 @@
 package com.sistema.admin.catalogo.cor.api;
 
-import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
 import com.sistema.admin.catalogo.cor.aplicacao.CorService;
 
 import com.sistema.admin.catalogo.cor.api.dto.CorRequest;
@@ -15,6 +14,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+@CrossOrigin("*")
 @RestController
 @RequestMapping("/api/v1/cores")
 @RequiredArgsConstructor
