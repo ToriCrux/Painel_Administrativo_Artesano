@@ -44,25 +44,25 @@ public class CategoriaController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<CategoriaResponse> salvarCategoria(@RequestBody @Valid CategoriaRequest categoriaRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(categoriaService.salvar(categoriaRequest));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<CategoriaResponse> atualizarCategoria(@PathVariable Long id, @RequestBody @Valid CategoriaRequest categoriaRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(categoriaService.atualizar(id, categoriaRequest));
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<CategoriaResponse> desativar(@PathVariable Long id) {
         return ResponseEntity.status(HttpStatus.CREATED).body(categoriaService.desativar(id));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> deletarCategoria(@PathVariable @Valid Long id) {
         categoriaService.deletar(id);
         return ResponseEntity.noContent().build();

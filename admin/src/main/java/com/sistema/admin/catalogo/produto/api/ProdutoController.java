@@ -23,7 +23,7 @@ public class ProdutoController {
     private final ProdutoService produtoService;
 
     @GetMapping
-    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<ProdutoResponse>> listarProdutos(
             @RequestParam(required = false) String nome,
             Pageable pageable) {
@@ -44,25 +44,25 @@ public class ProdutoController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<ProdutoResponse> salvarProduto(@RequestBody @Valid ProdutoRequest produtoRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(produtoService.salvar(produtoRequest));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<ProdutoResponse> atualizarProduto(@PathVariable Long id, @RequestBody @Valid ProdutoRequest produtoRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(produtoService.atualizar(id, produtoRequest));
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('USUARIO')")
     public ResponseEntity<ProdutoResponse> desativarProduto(@PathVariable Long id) {
         return ResponseEntity.status(HttpStatus.CREATED).body(produtoService.desativar(id));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('USER')")
+    @PreAuthorize("hasRole('USUARIO')")
     public void deletar(@PathVariable Long id) {
         produtoService.deletar(id);
     }

@@ -23,7 +23,7 @@ public class PropostaController {
 
     private final PropostaService service;
 
-    //@PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMINISTRADOR')")
     @GetMapping
     public ResponseEntity<Page<PropostaResponse>> listar(Pageable pageable) {
         Page<PropostaResponse> page = service.listar(pageable)
@@ -31,26 +31,26 @@ public class PropostaController {
         return ResponseEntity.ok(page);
     }
 
-    //@PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMINISTRADOR')")
     @GetMapping("/{id}")
     public ResponseEntity<PropostaResponse> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(toResponse(service.buscarPorId(id)));
     }
 
-    //@PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMINISTRADOR')")
     @GetMapping("/codigo/{codigo}")
     public ResponseEntity<PropostaResponse> buscarPorCodigo(@PathVariable String codigo) {
         return ResponseEntity.ok(toResponse(service.buscarPorCodigo(codigo)));
     }
 
-    //@PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMINISTRADOR')")
     @PostMapping
     public ResponseEntity<PropostaResponse> criar(@Valid @RequestBody PropostaRequest request) {
         Proposta proposta = toEntity(request);
         return ResponseEntity.ok(toResponse(service.salvar(proposta)));
     }
 
-    //@PreAuthorize("hasRole('ADMIN')")
+    //@PreAuthorize("hasRole('ADMINISTRADOR')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         service.deletar(id);

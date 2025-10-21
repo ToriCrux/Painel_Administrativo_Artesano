@@ -44,25 +44,25 @@ public class CorController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<CorResponse> salvarCor(@RequestBody @Valid CorRequest corRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(corService.salvar(corRequest));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<CorResponse> atualizarCor(@PathVariable Long id, @RequestBody @Valid CorRequest corRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(corService.atualizar(id, corRequest));
     }
 
     @PutMapping("/{id}/status")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<CorResponse> desativar(@PathVariable Long id) {
         return ResponseEntity.status(HttpStatus.CREATED).body(corService.desativar(id));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> deletar(@PathVariable Long id) {
         corService.deletar(id);
         return ResponseEntity.noContent().build();

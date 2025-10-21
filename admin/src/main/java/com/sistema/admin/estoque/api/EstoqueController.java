@@ -47,7 +47,7 @@ public class EstoqueController {
 
 
     @PutMapping("/{id}/movimentacoes/ajuste")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<EstoqueResponse> ajustarSaldo(
             @PathVariable Long id,
             @RequestBody @Valid EstoqueRequest request) {
@@ -57,7 +57,7 @@ public class EstoqueController {
 
 
     @PostMapping("/{id}/movimentacoes/entrada")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<EstoqueResponse> entrada(
             @PathVariable Long id,
             @RequestBody @Valid EstoqueRequest request) {
@@ -67,7 +67,7 @@ public class EstoqueController {
 
 
     @PostMapping("/{id}/movimentacoes/saida")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<EstoqueResponse> saida(
             @PathVariable Long id,
             @RequestBody @Valid EstoqueRequest request) {
