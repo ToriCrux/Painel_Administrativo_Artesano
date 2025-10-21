@@ -1,25 +1,27 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/admin_db
+    url: jdbc:postgresql://localhost:5434/admin_db
     username: admin_user
     password: admin_pass
     driver-class-name: org.postgresql.Driver
 
   flyway:
     enabled: true
-    url: jdbc:postgresql://localhost:5433/admin_db
+    url: jdbc:postgresql://localhost:5434/admin_db
     user: admin_user
     password: admin_pass
     locations: classpath:db/migration
     baseline-on-migrate: true
 
   jpa:
+    show-sql: false
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     properties:
-      hibernate.dialect: org.hibernate.dialect.PostgreSQLDialect
-      hibernate.format_sql: true
-      hibernate.jdbc.time_zone: UTC
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
     open-in-view: false
 
 server:
@@ -31,7 +33,3 @@ server:
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
-
-jwt:
-  secret: kKm5G2MIj9aMOK/y6v0tXpLHmv8nciqTmrLb+HlJk3k=
-  expiration: 28800
