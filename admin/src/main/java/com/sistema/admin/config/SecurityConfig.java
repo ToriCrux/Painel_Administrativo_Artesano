@@ -49,12 +49,12 @@ public class SecurityConfig {
 	@Bean
 	org.springframework.core.convert.converter.Converter<Jwt, ? extends AbstractAuthenticationToken> jwtAuthConverter() {
 		var gac = new JwtGrantedAuthoritiesConverter();
-		gac.setAuthoritiesClaimName("roles"); // claim gerado pelo autenticacao-servico
-		gac.setAuthorityPrefix("");            // já vem "ROLE_ADMINISTRADOR"/"ROLE_USUARIO"
+		gac.setAuthoritiesClaimName("roles");
+		gac.setAuthorityPrefix("");
 
 		return jwt -> {
 			var authorities = gac.convert(jwt);
-			String principal = jwt.getClaimAsString("sub"); // email
+			String principal = jwt.getClaimAsString("sub");
 			return new JwtAuthenticationToken(jwt, authorities, principal);
 		};
 	}
