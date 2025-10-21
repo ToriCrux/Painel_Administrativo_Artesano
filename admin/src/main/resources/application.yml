@@ -1,6 +1,5 @@
 auth:
   jwt:
-    # use o MESMO secret base64 do autenticacao-servico
     secret: ${AUTH_JWT_SECRET_BASE64:kKm5G2MIj9aMOK/y6v0tXpLHmv8nciqTmrLb+HlJk3k=}
     expiration: 28800
 
@@ -14,8 +13,8 @@ spring:
       port: 8082
   security:
     oauth2:
-      resourceserver:       # <<<< sem espaço!
-        jwt: {}             # não defina string aqui; usaremos JwtDecoder via @Bean
+      resourceserver:
+        jwt: {}
   jpa:
     properties:
       hibernate:
