@@ -22,7 +22,7 @@ public class ProdutoController {
     private final ProdutoService produtoService;
 
     @GetMapping
-    @PreAuthorize("isAuthenticated()")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Page<ProdutoResponse>> listarProdutos(
             @RequestParam(required = false) String nome,
             Pageable pageable) {
