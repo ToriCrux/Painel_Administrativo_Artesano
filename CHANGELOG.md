@@ -1,7 +1,6 @@
 # Atualização para a equipe – 2025-10-22
 
-**Branch nova**: `dev_refactoring_auth_service`  
-**Branch antiga**: `movimentacao`
+**Branch nova**: `dev_refactoring_auth_service`
 
 ## Resumo Executivo
 
