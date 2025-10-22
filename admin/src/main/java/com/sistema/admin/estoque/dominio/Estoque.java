@@ -36,15 +36,13 @@ public class Estoque {
     @Column(nullable = false)
     private OffsetDateTime atualizadoEm;
 
-    // Inicializa timestamps ao criar registro
     @PrePersist
     public void prePersist() {
         var now = OffsetDateTime.now();
         this.criadoEm = now;
-        this.atualizadoEm = now; // 👈 garante valor no insert
+        this.atualizadoEm = now;
     }
 
-    // Atualiza timestamp sempre que houver update
     @PreUpdate
     public void preUpdate() {
         this.atualizadoEm = OffsetDateTime.now();

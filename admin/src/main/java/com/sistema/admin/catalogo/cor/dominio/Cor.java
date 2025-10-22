@@ -23,7 +23,7 @@ public class Cor {
     @Column(nullable = false, unique = true)
     private String nome;
 
-    private String hex; // opcional (#FFFFFF)
+    private String hex;
 
     @Column(nullable = false)
     private Boolean ativo = true;

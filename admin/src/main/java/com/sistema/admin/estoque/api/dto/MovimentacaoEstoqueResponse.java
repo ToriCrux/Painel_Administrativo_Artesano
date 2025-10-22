@@ -10,7 +10,7 @@ import java.time.OffsetDateTime;
 public class MovimentacaoEstoqueResponse {
     private Long id;
     private Long produtoId;
-    private String tipo;       // ENTRADA, SAIDA, AJUSTE, CRIACAO
+    private String tipo;
     private Long quantidade;
     private Long saldoFinal;
     private OffsetDateTime criadoEm;
