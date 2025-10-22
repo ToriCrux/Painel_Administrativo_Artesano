@@ -8,9 +8,6 @@ spring:
     name: CATALOGO-SERVICE
   profiles:
     active: dev
-  rsocket:
-    server:
-      port: 8082
   security:
     oauth2:
       resourceserver:
@@ -22,12 +19,14 @@ spring:
           time_zone: UTC
     open-in-view: false
 
-server:
-  error:
-    include-message: always
-    include-binding-errors: always
-    include-stacktrace: always
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
 
-springdoc:
-  swagger-ui:
-    path: /swagger-ui.html
+server:
+  port: 8082
