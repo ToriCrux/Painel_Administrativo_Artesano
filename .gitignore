@@ -30,5 +30,7 @@ build/
 !**/src/test/**/build/
 /admin/data/**
 
+
 ### VS Code ###
 .vscode/
+/autenticacao-service/.jqwik-database
