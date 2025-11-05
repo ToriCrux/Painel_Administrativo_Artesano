@@ -1,5 +1,6 @@
 package com.sistema.admin.catalogo.produto.aplicacao;
 
+import com.sistema.admin.catalogo.produtoimagem.infra.ProdutoImagemRepository;
 import com.sistema.admin.estoque.aplicacao.EstoqueService;
 import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
 import com.sistema.admin.catalogo.categoria.infra.CategoriaRepository;
@@ -26,9 +27,12 @@ public class ProdutoService {
     private final ProdutoRepository produtoRepository;
     private final CategoriaRepository categoriaRepository;
     private final CorRepository corRepository;
+	private final ProdutoImagemRepository produtoImagemRepository;
     private final EstoqueService estoqueService;
 
     public Page<ProdutoResponse> listar(String nome, Pageable pageable) {
+		String principalUrl = buildImagemPrincipalUrl(1L);
+		System.out.println(principalUrl);
         var page = (nome != null && !nome.isBlank())
                 ? produtoRepository.findByNomeContainingIgnoreCase(nome, pageable)
                 : produtoRepository.findAll(pageable);
@@ -112,7 +116,19 @@ public class ProdutoService {
         produtoRepository.deleteById(produto.getId());
     }
 
-    private ProdutoResponse toResponse(Produto produto) {
+	private String buildImagemPrincipalUrl(Long produtoId) {
+		return produtoImagemRepository
+				.findFirstByProdutoIdAndPrincipalTrue(produtoId)
+				.map(img -> "/produtos/" + produtoId + "/imagens/" + img.getId())
+				.orElse(null);
+	}
+
+
+	private ProdutoResponse toResponse(Produto produto) {
+
+		String principalUrl = buildImagemPrincipalUrl(produto.getId());
+		System.out.println(principalUrl);
+
         return new ProdutoResponse(
                 produto.getId(),
                 produto.getCodigo(),
@@ -133,9 +149,10 @@ public class ProdutoService {
                 produto.getMedidas(),
                 produto.getPrecoUnitario(),
                 produto.getAtivo(),
-                produto.getCriadoEm(),
-                produto.getAtualizadoEm(),
-                produto.getDescricao()
+				principalUrl,
+				produto.getDescricao(),
+				produto.getCriadoEm(),
+				produto.getAtualizadoEm()
         );
     }
 }

@@ -16,8 +16,9 @@ public record ProdutoResponse(
         String medidas,
         BigDecimal precoUnitario,
         Boolean ativo,
+		String imagemPrincipalUrl,
+		String descricao,
         OffsetDateTime criadoEm,
-        OffsetDateTime atualizadoEm,
+        OffsetDateTime atualizadoEm
 
-        String descricao
 ) {}

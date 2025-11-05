@@ -7,6 +7,7 @@ networks:
 volumes:
   pg_auth_data:
   pg_admin_data:
+  pgadmin_data:   # <— volume para o PgAdmin
 
 services:
   registry:
@@ -67,7 +68,6 @@ services:
   autenticacao-service:
     build:
       context: ./autenticacao-service
-      dockerfile: Dockerfile
     container_name: autenticacao-service
     depends_on:
       registry:
@@ -83,11 +83,9 @@ services:
       - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-auth:5432/${AUTH_DB_NAME:-auth_db}
       - SPRING_FLYWAY_USER=${AUTH_DB_USER:-auth_user}
       - SPRING_FLYWAY_PASSWORD=${AUTH_DB_PASS:-auth_pass}
-      # Eureka
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
       - SPRING_APPLICATION_NAME=AUTENTICACAO-SERVICE
-      # JWT
       - JWT_SECRET=${AUTH_JWT_SECRET_BASE64}
       - JWT_EXPIRATION=${AUTH_JWT_EXPIRATION_SECONDS:-28800}
       - AUTH_JWT_SECRET_BASE64=${AUTH_JWT_SECRET_BASE64}
@@ -99,7 +97,6 @@ services:
   catalogo-service:
     build:
       context: ./admin
-      dockerfile: Dockerfile
     container_name: catalogo-service
     depends_on:
       registry:
@@ -117,13 +114,34 @@ services:
       - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-admin:5432/${ADMIN_DB_NAME:-admin_db}
       - SPRING_FLYWAY_USER=${ADMIN_DB_USER:-admin_user}
       - SPRING_FLYWAY_PASSWORD=${ADMIN_DB_PASS:-admin_pass}
-      # Eureka
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
       - SPRING_APPLICATION_NAME=CATALOGO-SERVICE
-      # Resource Server: MESMO secret HS256 do auth
       - AUTH_JWT_SECRET_BASE64=${AUTH_JWT_SECRET_BASE64}
       - JAVA_OPTS=-Xms256m -Xmx384m
     ports:
       - "8082:8082"
+    networks: [backend]
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    depends_on:
+      postgres-admin:
+        condition: service_healthy
+      postgres-auth:
+        condition: service_healthy
+    env_file:
+      - ./compose.env
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_LISTEN_PORT: 5050
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin                  # <— persistência
+      - ./db/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    ports:
+      - "5050:5050"
+    restart: unless-stopped
     networks: [backend]
