@@ -1,4 +1,4 @@
-package com.sistema.admin.config;
+package com.sistema.estoque_service.config;
 
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
@@ -94,4 +94,3 @@ public class SecurityConfig {
 		return http.build();
 	}
 }
-

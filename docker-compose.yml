@@ -7,6 +7,7 @@ networks:
 volumes:
   pg_auth_data:
   pg_admin_data:
+  pg_estoque_data:
   pgadmin_data:   # <— volume para o PgAdmin
 
 services:
@@ -65,6 +66,42 @@ services:
       retries: 30
     networks: [backend]
 
+  postgres-estoque:
+    image: postgres:16
+    container_name: postgres-estoque
+    environment:
+      - POSTGRES_DB=${ESTOQUE_DB_NAME:-estoque_db}
+      - POSTGRES_USER=${ESTOQUE_DB_USER:-estoque_user}
+      - POSTGRES_PASSWORD=${ESTOQUE_DB_PASS:-estoque_pass}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_estoque_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ESTOQUE_DB_USER:-estoque_user} -d ${ESTOQUE_DB_NAME:-estoque_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [backend]
+
+  postgres-proposta:
+    image: postgres:16
+    container_name: postgres-proposta
+    environment:
+      - POSTGRES_DB=${PROPOSTA_DB_NAME:-proposta_db}
+      - POSTGRES_USER=${PROPOSTA_DB_USER:-proposta_user}
+      - POSTGRES_PASSWORD=${PROPOSTA_DB_PASS:-proposta_pass}
+    ports:
+      - "5433:5432"
+    volumes:
+      - pg_proposta_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${PROPOSTA_DB_USER:-proposta_user} -d ${PROPOSTA_DB_NAME:-proposta_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [backend]
+
   autenticacao-service:
     build:
       context: ./autenticacao-service
@@ -105,6 +142,8 @@ services:
         condition: service_healthy
       postgres-admin:
         condition: service_healthy
+      rabbitmq:
+        condition: service_started
     environment:
       - SERVER_PORT=8082
       - SPRING_PROFILES_ACTIVE=docker
@@ -119,9 +158,94 @@ services:
       - SPRING_APPLICATION_NAME=CATALOGO-SERVICE
       - AUTH_JWT_SECRET_BASE64=${AUTH_JWT_SECRET_BASE64}
       - JAVA_OPTS=-Xms256m -Xmx384m
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
     ports:
       - "8082:8082"
     networks: [backend]
+
+  estoque-service:
+    build:
+      context: ./estoque-service
+    container_name: estoque-service
+    depends_on:
+      registry:
+        condition: service_healthy
+      autenticacao-service:
+        condition: service_healthy
+      postgres-estoque:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    environment:
+      - SERVER_PORT=8083
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-estoque:5432/${ESTOQUE_DB_NAME:-estoque_db}
+      - SPRING_DATASOURCE_USERNAME=${ESTOQUE_DB_USER:-estoque_user}
+      - SPRING_DATASOURCE_PASSWORD=${ESTOQUE_DB_PASS:-estoque_pass}
+      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-estoque:5432/${ESTOQUE_DB_NAME:-estoque_db}
+      - SPRING_FLYWAY_USER=${ESTOQUE_DB_USER:-estoque_user}
+      - SPRING_FLYWAY_PASSWORD=${ESTOQUE_DB_PASS:-estoque_pass}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - SPRING_APPLICATION_NAME=ESTOQUE-SERVICE
+      - AUTH_JWT_SECRET_BASE64=${AUTH_JWT_SECRET_BASE64}
+      - JAVA_OPTS=-Xms256m -Xmx384m
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+    ports:
+      - "8083:8083"
+    networks: [backend]
+
+  proposta-service:
+    build:
+      context: ./proposta-service
+    container_name: proposta-service
+    depends_on:
+      registry:
+        condition: service_healthy
+      autenticacao-service:
+        condition: service_healthy
+      postgres-proposta:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_started
+    environment:
+      - SERVER_PORT=8083
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-proposta:5432/${ESTOQUE_DB_NAME:-proposta_db}
+      - SPRING_DATASOURCE_USERNAME=${ESTOQUE_DB_USER:-proposta_user}
+      - SPRING_DATASOURCE_PASSWORD=${ESTOQUE_DB_PASS:-proposta_pass}
+      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-proposta:5432/${ESTOQUE_DB_NAME:-proposta_db}
+      - SPRING_FLYWAY_USER=${ESTOQUE_DB_USER:-proposta_user}
+      - SPRING_FLYWAY_PASSWORD=${ESTOQUE_DB_PASS:-proposta_pass}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - SPRING_APPLICATION_NAME=PROPOSTA-SERVICE
+      - AUTH_JWT_SECRET_BASE64=${AUTH_JWT_SECRET_BASE64}
+      - JAVA_OPTS=-Xms256m -Xmx384m
+      - SPRING_RABBITMQ_HOST=rabbitmq
+      - SPRING_RABBITMQ_PORT=5672
+      - SPRING_RABBITMQ_USERNAME=guest
+      - SPRING_RABBITMQ_PASSWORD=guest
+    ports:
+      - "8084:8084"
+    networks: [backend]
+
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    ports:
+      - "5672:5672"   # porta usada pelo Spring Boot
+      - "15672:15672" # painel web de administração
+    networks: [ backend ]
 
   pgadmin:
     image: dpage/pgadmin4:latest

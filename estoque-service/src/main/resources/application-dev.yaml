@@ -1,0 +1,35 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5434/estoque_db
+    username: estoque_user
+    password: estoque_pass
+    driver-class-name: org.postgresql.Driver
+
+  flyway:
+    enabled: true
+    url: jdbc:postgresql://localhost:5434/estoque_db
+    user: estoque_user
+    password: estoque_pass
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+  jpa:
+    show-sql: false
+    hibernate:
+      ddl-auto: none
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+server:
+  error:
+    include-message: always
+    include-binding-errors: always
+    include-stacktrace: always
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
