@@ -1,7 +1,6 @@
 package com.sistema.admin.catalogo.produto.aplicacao;
 
 import com.sistema.admin.catalogo.produtoimagem.infra.ProdutoImagemRepository;
-import com.sistema.admin.estoque.aplicacao.EstoqueService;
 import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
 import com.sistema.admin.catalogo.categoria.infra.CategoriaRepository;
 import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
@@ -12,8 +11,11 @@ import com.sistema.admin.catalogo.produto.api.dto.ProdutoRequest;
 import com.sistema.admin.catalogo.produto.api.dto.ProdutoResponse;
 import com.sistema.admin.config.exception.ConflictException;
 import com.sistema.admin.config.exception.NotFoundException;
+import com.sistema.admin.mensageria.RabbitMQConfig;
+import com.sistema.admin.mensageria.evento.ProdutoCriadoEvent;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -28,7 +30,7 @@ public class ProdutoService {
     private final CategoriaRepository categoriaRepository;
     private final CorRepository corRepository;
 	private final ProdutoImagemRepository produtoImagemRepository;
-    private final EstoqueService estoqueService;
+	private final RabbitTemplate rabbitTemplate;
 
     public Page<ProdutoResponse> listar(String nome, Pageable pageable) {
 		String principalUrl = buildImagemPrincipalUrl(1L);
@@ -70,7 +72,20 @@ public class ProdutoService {
                 .build();
 
         var produtoSalvo = produtoRepository.save(produto);
-        estoqueService.criarEstoqueParaProduto(produtoSalvo.getId());
+
+		var evento = new ProdutoCriadoEvent(
+				produtoSalvo.getId(),
+				produtoSalvo.getCodigo(),
+				produtoSalvo.getNome(),
+				produtoSalvo.getAtivo()
+		);
+
+		rabbitTemplate.convertAndSend(
+				RabbitMQConfig.PRODUTO_EXCHANGE,
+				RabbitMQConfig.PRODUTO_CRIADO_ROUTING_KEY,
+				evento
+		);
+
         return toResponse(produtoSalvo);
     }
 
