@@ -1,9 +1,9 @@
-package com.sistema.admin.estoque.aplicacao;
+package com.sistema.estoque_service.aplicacao;
 
-import com.sistema.admin.estoque.dominio.Estoque;
-import com.sistema.admin.estoque.dominio.MovimentacaoEstoque;
-import com.sistema.admin.estoque.infra.EstoqueRepository;
-import com.sistema.admin.estoque.infra.MovimentacaoEstoqueRepository;
+import com.sistema.estoque_service.dominio.Estoque;
+import com.sistema.estoque_service.dominio.MovimentacaoEstoque;
+import com.sistema.estoque_service.infra.EstoqueRepository;
+import com.sistema.estoque_service.infra.MovimentacaoEstoqueRepository;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;

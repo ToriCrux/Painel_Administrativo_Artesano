@@ -1,10 +1,11 @@
-package com.sistema.admin.estoque.api;
+package com.sistema.estoque_service.api;
 
-import com.sistema.admin.estoque.api.dto.EstoqueRequest;
-import com.sistema.admin.estoque.api.dto.EstoqueResponse;
-import com.sistema.admin.estoque.aplicacao.EstoqueService;
-import com.sistema.admin.estoque.dominio.Estoque;
-import com.sistema.admin.estoque.dominio.MovimentacaoEstoque;
+import com.sistema.estoque_service.api.dto.EstoqueRequest;
+import com.sistema.estoque_service.api.dto.EstoqueResponse;
+import com.sistema.estoque_service.aplicacao.EstoqueService;
+import com.sistema.estoque_service.dominio.Estoque;
+import com.sistema.estoque_service.dominio.MovimentacaoEstoque;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -12,7 +13,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
-import jakarta.validation.Valid;
 import java.util.List;
 
 @CrossOrigin("*")

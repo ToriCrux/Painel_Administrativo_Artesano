@@ -1,7 +1,7 @@
-package com.sistema.admin.estoque.infra;
+package com.sistema.estoque_service.infra;
 
 
-import com.sistema.admin.estoque.dominio.Estoque;
+import com.sistema.estoque_service.dominio.Estoque;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;

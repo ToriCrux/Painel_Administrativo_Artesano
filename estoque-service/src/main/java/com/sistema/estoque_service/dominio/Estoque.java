@@ -1,4 +1,4 @@
-package com.sistema.admin.estoque.dominio;
+package com.sistema.estoque_service.dominio;
 
 import jakarta.persistence.*;
 import lombok.*;

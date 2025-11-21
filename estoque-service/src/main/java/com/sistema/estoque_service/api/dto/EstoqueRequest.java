@@ -1,4 +1,4 @@
-package com.sistema.admin.estoque.api.dto;
+package com.sistema.estoque_service.api.dto;
 
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;

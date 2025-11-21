@@ -1,4 +1,4 @@
-package com.sistema.admin.estoque.api.dto;
+package com.sistema.estoque_service.api.dto;
 
 import lombok.Builder;
 import lombok.Getter;

@@ -1,6 +1,6 @@
-package com.sistema.admin.estoque.infra;
+package com.sistema.estoque_service.infra;
 
-import com.sistema.admin.estoque.dominio.MovimentacaoEstoque;
+import com.sistema.estoque_service.dominio.MovimentacaoEstoque;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
