@@ -24,6 +24,12 @@ public class Estoque {
     @Column(name = "produto_id", nullable = false)
     private Long produtoId;
 
+    @Column(name = "produto_codigo", length = 50)
+    private String produtoCodigo;
+
+    @Column(name = "produto_nome", length = 255)
+    private String produtoNome;
+
     @Column(name = "saldo", nullable = false)
     private long saldo;
 

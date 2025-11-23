@@ -2,6 +2,7 @@ package com.sistema.admin.estoque.api;
 
 import com.sistema.admin.estoque.api.dto.EstoqueRequest;
 import com.sistema.admin.estoque.api.dto.EstoqueResponse;
+import com.sistema.admin.estoque.api.dto.MovimentacaoEstoqueResponse;
 import com.sistema.admin.estoque.aplicacao.EstoqueService;
 import com.sistema.admin.estoque.dominio.Estoque;
 import com.sistema.admin.estoque.dominio.MovimentacaoEstoque;
@@ -23,7 +24,6 @@ public class EstoqueController {
 
     private final EstoqueService estoqueService;
 
-
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<EstoqueResponse>> listarEstoques(
@@ -37,14 +37,12 @@ public class EstoqueController {
         return ResponseEntity.ok(page);
     }
 
-
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<EstoqueResponse> buscarPorProduto(@PathVariable Long id) {
         var estoque = estoqueService.buscarPorProduto(id);
         return ResponseEntity.ok(toResponse(estoque));
     }
-
 
     @PutMapping("/{id}/movimentacoes/ajuste")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
@@ -55,7 +53,6 @@ public class EstoqueController {
         return ResponseEntity.ok(toResponse(estoque));
     }
 
-
     @PostMapping("/{id}/movimentacoes/entrada")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<EstoqueResponse> entrada(
@@ -65,7 +62,6 @@ public class EstoqueController {
         return ResponseEntity.ok(toResponse(estoque));
     }
 
-
     @PostMapping("/{id}/movimentacoes/saida")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<EstoqueResponse> saida(
@@ -73,6 +69,13 @@ public class EstoqueController {
             @RequestBody @Valid EstoqueRequest request) {
         var estoque = estoqueService.baixar(id, request.getSaldo());
         return ResponseEntity.ok(toResponse(estoque));
+    }
+
+    @DeleteMapping("/{produtoId}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<Void> deletarEstoque(@PathVariable Long produtoId) {
+        estoqueService.deletarEstoque(produtoId);
+        return ResponseEntity.noContent().build();
     }
 
 
@@ -84,10 +87,19 @@ public class EstoqueController {
         return ResponseEntity.ok(movimentacoes);
     }
 
+    @PostMapping("/criar/{produtoId}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<EstoqueResponse> criarEstoque(@PathVariable Long produtoId) {
+        var estoque = estoqueService.criarEstoqueManual(produtoId);
+        return ResponseEntity.ok(toResponse(estoque));
+    }
+
 
     private EstoqueResponse toResponse(Estoque estoque) {
         return EstoqueResponse.builder()
                 .produtoId(estoque.getProdutoId())
+                .produtoCodigo(estoque.getProdutoCodigo())
+                .produtoNome(estoque.getProdutoNome())
                 .saldo(estoque.getSaldo())
                 .versao(estoque.getVersao())
                 .atualizadoEm(estoque.getAtualizadoEm())
