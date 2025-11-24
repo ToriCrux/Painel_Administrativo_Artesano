@@ -1,23 +1,34 @@
 import tw from "tailwind-styled-components";
 
-export const Page = tw.div`
-  min-h-screen
+export const Wrapper = tw.div`
+  w-full
+  px-6
+  mt-6       
+`;
+
+export const HeaderBar = tw.div`
   flex
-  items-start
-  justify-center
-  bg-[#f2f6fa]
-  py-12
+  items-center
+  justify-between
+  mb-6        
+`;
+
+export const Breadcrumb = tw.h2`
+  text-teal-600
+  font-semibold
+  tracking-wide
 `;
 
 export const ButtonRow = tw.div`
   w-full
   max-w-5xl
+  mx-auto
   flex
   flex-col
   gap-6
   md:flex-row
-  md:items-center
   md:justify-between
+  md:items-center
 `;
 
 export const BigButton = tw.button`

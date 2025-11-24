@@ -1,6 +1,5 @@
-"use client";
-
 import { Container, Content, HomeCenter, Title, Subtitle } from "./styles";
+
 
 export default function SistemaPage() {
   return (

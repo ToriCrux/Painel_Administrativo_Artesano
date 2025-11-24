@@ -1,4 +1,3 @@
-import "../globals.css";
 import Navbar from "@/app/Components/Navbar/page";
 
 export const metadata = {
@@ -9,11 +8,8 @@ export const metadata = {
 export default function SistemaLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen flex flex-col bg-white">
-      {/* Navbar fixa em todas as páginas internas do sistema */}
       <Navbar />
-
-      {/* Conteúdo dinâmico de cada rota */}
-      <main>
+      <main className="grow mt-16">
         {children}
       </main>
     </div>

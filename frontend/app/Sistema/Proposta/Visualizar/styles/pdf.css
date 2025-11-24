@@ -1,0 +1,101 @@
+.pdf-wrapper {
+  font-family: Arial, sans-serif;
+  background: #ffffff;
+  color: #222;
+  width: 210mm;
+  min-height: 297mm;
+  padding: 25mm 20mm;
+  box-sizing: border-box;
+}
+
+/* ===== Cabeçalho ===== */
+.pdf-header {
+  text-align: center;
+  margin-bottom: 20mm;
+}
+
+.pdf-title {
+  font-size: 24px;
+  font-weight: bold;
+  color: #14b8a6;
+  margin: 0;
+  margin-bottom: 6px;
+}
+
+.pdf-subtitle {
+  font-size: 16px;
+  color: #0d9488;
+  margin: 0;
+  margin-bottom: 10px;
+}
+
+.pdf-divider {
+  width: 90%;
+  height: 2px;
+  background-color: #14b8a6;
+  margin: 0 auto;
+}
+
+/* ===== Estrutura de seções ===== */
+section {
+  margin-bottom: 15mm;
+}
+
+section h3 {
+  color: #0d9488;
+  font-size: 15px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid #14b8a6;
+  display: inline-block;
+  padding-bottom: 2px;
+}
+
+/* ===== Tabelas ===== */
+.pdf-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 6mm;
+}
+
+/* Cabeçalho da tabela de produtos */
+.pdf-table th {
+  background: #14b8a6;
+  color: white;
+  padding: 10px 8px; /* 🔹 padding maior para melhor legibilidade */
+  text-align: left;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+/* Células padrão */
+.pdf-table td {
+  border: 1px solid #ddd;
+  padding: 10px 8px; /* 🔹 aumenta altura */
+  font-size: 12px;
+  line-height: 1.5; /* 🔹 aumenta altura da linha */
+  vertical-align: middle; /* 🔹 centraliza verticalmente o texto */
+}
+
+/* Coluna de rótulos (Cliente) */
+.pdf-table td:first-child {
+  background: #f7f7f7;
+  font-weight: bold;
+  color: #0d9488;
+  width: 35%;
+  text-align: left;
+  padding-left: 10px; /* 🔹 garante espaço extra no início */
+}
+
+/* Coluna de valores (Cliente) */
+.pdf-table td:last-child {
+  color: #333;
+}
+
+/* Total da proposta */
+.pdf-total {
+  margin-top: 10mm;
+  text-align: right;
+  font-weight: bold;
+  font-size: 14px;
+  color: #0d9488;
+}

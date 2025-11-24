@@ -1,9 +1,10 @@
 // src/app/page.tsx
 import React from 'react';
-import Login from './Home/Page';
+import Home from './Home/page';
+
 
 const HomePage: React.FC = () => {
-  return <Login />;
+  return <Home />;
 };
 
 export default HomePage;

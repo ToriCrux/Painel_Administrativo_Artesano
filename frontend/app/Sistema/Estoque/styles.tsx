@@ -3,7 +3,7 @@ import tw from "tailwind-styled-components";
 export const Wrapper = tw.div`
   w-full
   px-6
-  mt-6              /* pequena distância abaixo da navbar */
+  mt-6             
 `;
 
 export const HeaderBar = tw.div`

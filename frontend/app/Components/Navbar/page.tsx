@@ -9,10 +9,11 @@ export default function Navbar() {
   const pathname = usePathname();
 
   const links = [
-    { name: "CATÁLOGO", href: "/Sistema" },
+    { name: "HOME", href: "/Sistema" },
+    { name: "CATÁLOGO", href: "/Sistema/Catalogo" },
     { name: "PRODUTOS", href: "/Sistema/Produtos" },
     { name: "ESTOQUE", href: "/Sistema/Estoque" },
-    { name: "PROPOSTAS ORÇAMENTÁRIAS", href: "/Sistema/Propostas" },
+    { name: "PROPOSTAS ORÇAMENTÁRIAS", href: "/Sistema/Proposta" },
     { name: "PEDIDOS", href: "/Sistema/Pedidos" },
     { name: "FILTROS", href: "/Sistema/Filtros" },
   ];
