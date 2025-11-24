@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -30,14 +31,22 @@ public class PropostaService {
         return repository.findByCodigo(codigo)
                 .orElseThrow(() -> new EntityNotFoundException("Proposta não encontrada com código: " + codigo));
     }
-
+    
+    @Transactional
     public Proposta salvar(Proposta proposta) {
-        String cpfCnpj = proposta.getCliente().getCpfCnpj();
-        Cliente clienteExistente = clienteRepository.findByCpfCnpj(cpfCnpj)
-                .orElseThrow(() -> new EntityNotFoundException("Cliente não encontrado com CPF/CNPJ: " + cpfCnpj));
+        Cliente cliente = proposta.getCliente();
 
+        // Verifica se o cliente já existe
+        Cliente clienteExistente = clienteRepository.findByCpfCnpj(cliente.getCpfCnpj())
+                .orElseGet(() -> {
+                    // Se não existir, salva o novo cliente
+                    return clienteRepository.save(cliente);
+                });
+
+        // Define o cliente (novo ou existente)
         proposta.setCliente(clienteExistente);
 
+        // Recalcula total e salva a proposta
         proposta.recalcularTotal();
         return repository.save(proposta);
     }
