@@ -1,0 +1,77 @@
+name: 🚀 CI - Build Backend (com suporte a variáveis de ambiente)
+
+on:
+  push:
+    branches: [ "workflow" ]
+  pull_request:
+    branches: [ "workflow" ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5434:5432
+        env:
+          POSTGRES_USER: artesano
+          POSTGRES_PASSWORD: artesano
+          POSTGRES_DB: artesano_db
+        options: >-
+          --health-cmd="pg_isready -U artesano"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      # 🌐 Variáveis globais (usadas em todos os módulos)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5434/artesano_db
+      SPRING_DATASOURCE_USERNAME: artesano
+      SPRING_DATASOURCE_PASSWORD: artesano
+      SPRING_FLYWAY_URL: jdbc:postgresql://localhost:5434/artesano_db
+      SPRING_FLYWAY_USER: artesano
+      SPRING_FLYWAY_PASSWORD: artesano
+      SERVER_PORT: 8080
+      JWT_SECRET: kKm5G2MIj9aMOK/y6v0tXpLHmv8nciqTmrLb+HlJk3k=
+      JWT_EXPIRATION: 28800
+
+    steps:
+      # 1️⃣ Clona o repositório
+      - name: 📦 Checkout do código
+        uses: actions/checkout@v4
+
+      # 2️⃣ Instala JDK 21
+      - name: ☕ Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      # 3️⃣ Cache do Maven
+      - name: ⚡ Cache do Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # 4️⃣ Build do monólito (admin)
+      - name: 🧱 Build do monólito (admin)
+        run: mvn -B -DskipTests clean package --file admin/pom.xml
+
+      # 5️⃣ Build do serviço de autenticação
+      - name: 🔐 Build do serviço de autenticação
+        run: mvn -B -DskipTests clean package --file autenticacao-service/pom.xml
+
+      # 6️⃣ Build do serviço de registro
+      - name: 🧾 Build do serviço de registro
+        run: mvn -B -DskipTests clean package --file registro-service/pom.xml
+
+      # 7️⃣ Conclusão
+      - name: ✅ Conclusão
+        run: echo "✅ Build finalizado com sucesso (sem testes)"
