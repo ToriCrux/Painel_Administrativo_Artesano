@@ -1,19 +1,15 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5433/authentication_db
-    username: postgres
-    password: postgres
-#    username: admin_user
-#    password: admin_pass
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5433/authentication_db}
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     driver-class-name: org.postgresql.Driver
 
   flyway:
     enabled: true
-    url: jdbc:postgresql://localhost:5433/authentication_db
-    user: postgres
-    password: postgres
-#    user: admin_user
-#    password: admin_pass
+    url: ${SPRING_FLYWAY_URL:jdbc:postgresql://localhost:5433/authentication_db}
+    user: ${SPRING_FLYWAY_USER:postgres}
+    password: ${SPRING_FLYWAY_PASSWORD:postgres}
     locations: classpath:db/migration
     baseline-on-migrate: true
 
@@ -27,6 +23,7 @@ spring:
     open-in-view: false
 
 server:
+  port: ${SERVER_PORT:8081}
   error:
     include-message: always
     include-binding-errors: always
@@ -37,5 +34,5 @@ springdoc:
     path: /swagger-ui.html
 
 jwt:
-  secret: kKm5G2MIj9aMOK/y6v0tXpLHmv8nciqTmrLb+HlJk3k=
-  expiration: 28800
+  secret: ${JWT_SECRET:kKm5G2MIj9aMOK/y6v0tXpLHmv8nciqTmrLb+HlJk3k=}
+  expiration: ${JWT_EXPIRATION:28800}
