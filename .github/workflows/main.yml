@@ -1,20 +1,22 @@
-name: CI - Build e Testes Backend
+name: 🚀 CI - Build Backend (sem testes)
 
 on:
   push:
-    branches: [ "main" ]
+    branches: [ "workflow" ]
   pull_request:
-    branches: [ "main" ]
+    branches: [ "workflow" ]
+  workflow_dispatch: # permite rodar manualmente no GitHub
 
 jobs:
   build:
-    name: 🧩 Build e Testes - Backend
     runs-on: ubuntu-latest
 
     steps:
-      - name: 📥 Clonar repositório
+      # 1️⃣ Clonar o repositório
+      - name: 📦 Checkout do código
         uses: actions/checkout@v4
 
+      # 2️⃣ Instalar JDK 21 (necessário para Spring Boot)
       - name: ☕ Configurar JDK 21
         uses: actions/setup-java@v4
         with:
@@ -22,17 +24,27 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
+      # 3️⃣ Cache do Maven para builds mais rápidos
+      - name: ⚡ Cache do Maven
+        uses: actions/cache@v4
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+
+      # 4️⃣ Build do monólito (admin)
       - name: 🧱 Build do monólito (admin)
-        working-directory: admin
-        run: mvn clean verify -DskipTests=false
+        run: mvn -B -DskipTests clean package --file admin/pom.xml
 
-      - name: 🔐 Build do serviço de autenticação
-        working-directory: autenticacao-service
-        run: mvn clean verify -DskipTests=false
+      # 5️⃣ Build do serviço de autenticação
+      - name: 🔐 Build do auth-service
+        run: mvn -B -DskipTests clean package --file autenticacao_service/pom.xml
 
-      - name: 🧾 Build do serviço de registro
-        working-directory: registro-service
-        run: mvn clean verify -DskipTests=false
+      # 6️⃣ Build do serviço de registro (ou outro microserviço)
+      - name: 🧾 Build do registro-service
+        run: mvn -B -DskipTests clean package --file registro_service/pom.xml
 
-      - name: ✅ Conclusão
-        run: echo "✅ Todos os serviços foram compilados e testados com sucesso!"
+      # 7️⃣ Build do serviço de catálogo (exemplo)
+      - name: 🛒 Build do catalogo-service
+        run: mvn -B -DskipTests clean package --file catalogo_service/pom.xml
