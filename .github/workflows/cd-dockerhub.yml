@@ -1,17 +1,16 @@
-name: 🐳 CD - Build & Push Docker Images
+name: 🚀 CD - Build e Push das Imagens Docker
 
 on:
   push:
-    branches:
-      - workflow     # ou "main", se quiser publicar direto da principal
+    branches: [ "workflow" ]  # ou main, se quiser automatizar em produção
   workflow_dispatch:
 
 jobs:
-  docker:
+  deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Checkout do código
+      # 1️⃣ Clonar repositório
       - name: 📦 Checkout do código
         uses: actions/checkout@v4
 
@@ -20,32 +19,38 @@ jobs:
         uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          password: ${{ secrets.DOCKER_TOKEN }}
 
-      # 3️⃣ Build & Push do monólito (admin)
-      - name: 🧱 Build & Push (Admin)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./admin
-          push: true
-          tags: ardovino/artesano-admin:latest
-
-      # 4️⃣ Build & Push do serviço de autenticação
-      - name: 🔐 Build & Push (Auth Service)
-        uses: docker/build-push-action@v6
-        with:
-          context: ./autenticacao-service
-          push: true
-          tags: ardovino/artesano-auth:latest
-
-      # 5️⃣ Build & Push do serviço de registro
-      - name: 🧾 Build & Push (Registro Service)
+      # 3️⃣ Build e Push - Registro Service
+      - name: 🏗️ Build & Push - registro-service
         uses: docker/build-push-action@v6
         with:
           context: ./registro-service
+          file: ./registro-service/Dockerfile
           push: true
-          tags: ardovino/artesano-registro:latest
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/registro-service:latest
 
-      # 6️⃣ Finalização
-      - name: ✅ Conclusão
-        run: echo "🎉 Todas as imagens foram publicadas com sucesso no Docker Hub!"
+      # 4️⃣ Build e Push - Autenticação Service
+      - name: 🧱 Build & Push - autenticacao-service
+        uses: docker/build-push-action@v6
+        with:
+          context: ./autenticacao-service
+          file: ./autenticacao-service/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/autenticacao-service:latest
+
+      # 5️⃣ Build e Push - Admin Service
+      - name: 🧩 Build & Push - admin
+        uses: docker/build-push-action@v6
+        with:
+          context: ./admin
+          file: ./admin/Dockerfile
+          push: true
+          tags: |
+            ${{ secrets.DOCKER_USERNAME }}/admin:latest
+
+      # 6️⃣ Conclusão
+      - name: ✅ Finalização
+        run: echo "🚀 Todas as imagens foram enviadas com sucesso para o Docker Hub!"
