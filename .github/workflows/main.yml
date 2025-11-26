@@ -1,0 +1,38 @@
+name: CI - Build e Testes Backend
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    name: 🧩 Build e Testes - Backend
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Clonar repositório
+        uses: actions/checkout@v4
+
+      - name: ☕ Configurar JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: 🧱 Build do monólito (admin)
+        working-directory: admin
+        run: mvn clean verify -DskipTests=false
+
+      - name: 🔐 Build do serviço de autenticação
+        working-directory: autenticacao-service
+        run: mvn clean verify -DskipTests=false
+
+      - name: 🧾 Build do serviço de registro
+        working-directory: registro-service
+        run: mvn clean verify -DskipTests=false
+
+      - name: ✅ Conclusão
+        run: echo "✅ Todos os serviços foram compilados e testados com sucesso!"
