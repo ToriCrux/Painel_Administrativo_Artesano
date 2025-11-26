@@ -1,0 +1,51 @@
+name: 🐳 CD - Build & Push Docker Images
+
+on:
+  push:
+    branches:
+      - workflow     # ou "main", se quiser publicar direto da principal
+  workflow_dispatch:
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1️⃣ Checkout do código
+      - name: 📦 Checkout do código
+        uses: actions/checkout@v4
+
+      # 2️⃣ Login no Docker Hub
+      - name: 🔐 Login no Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      # 3️⃣ Build & Push do monólito (admin)
+      - name: 🧱 Build & Push (Admin)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./admin
+          push: true
+          tags: ardovino/artesano-admin:latest
+
+      # 4️⃣ Build & Push do serviço de autenticação
+      - name: 🔐 Build & Push (Auth Service)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./autenticacao-service
+          push: true
+          tags: ardovino/artesano-auth:latest
+
+      # 5️⃣ Build & Push do serviço de registro
+      - name: 🧾 Build & Push (Registro Service)
+        uses: docker/build-push-action@v6
+        with:
+          context: ./registro-service
+          push: true
+          tags: ardovino/artesano-registro:latest
+
+      # 6️⃣ Finalização
+      - name: ✅ Conclusão
+        run: echo "🎉 Todas as imagens foram publicadas com sucesso no Docker Hub!"
