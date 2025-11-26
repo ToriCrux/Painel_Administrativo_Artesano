@@ -1,0 +1,147 @@
+name: artesano-stack
+
+networks:
+  backend:
+    driver: bridge
+
+volumes:
+  pg_auth_data:
+  pg_admin_data:
+  pgadmin_data:   # <— volume para o PgAdmin
+
+services:
+  registry:
+    build:
+      context: ./registro-service
+      dockerfile: Dockerfile
+    container_name: service-registry
+    environment:
+      - SERVER_PORT=8761
+      - SPRING_PROFILES_ACTIVE=docker
+      - JAVA_OPTS=-Xms128m -Xmx256m
+    ports:
+      - "8761:8761"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep -q '\"status\":\"UP\"'"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+    networks: [backend]
+
+  postgres-auth:
+    image: postgres:16
+    container_name: postgres-auth
+    environment:
+      - POSTGRES_DB=${AUTH_DB_NAME:-auth_db}
+      - POSTGRES_USER=${AUTH_DB_USER:-auth_user}
+      - POSTGRES_PASSWORD=${AUTH_DB_PASS:-auth_pass}
+    ports:
+      - "5435:5432"
+    volumes:
+      - pg_auth_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${AUTH_DB_USER:-auth_user} -d ${AUTH_DB_NAME:-auth_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [backend]
+
+  postgres-admin:
+    image: postgres:16
+    container_name: postgres-admin
+    environment:
+      - POSTGRES_DB=${ADMIN_DB_NAME:-admin_db}
+      - POSTGRES_USER=${ADMIN_DB_USER:-admin_user}
+      - POSTGRES_PASSWORD=${ADMIN_DB_PASS:-admin_pass}
+    ports:
+      - "5434:5432"
+    volumes:
+      - pg_admin_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ADMIN_DB_USER:-admin_user} -d ${ADMIN_DB_NAME:-admin_db}"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [backend]
+
+  autenticacao-service:
+    build:
+      context: ./autenticacao-service
+    container_name: autenticacao-service
+    depends_on:
+      registry:
+        condition: service_healthy
+      postgres-auth:
+        condition: service_healthy
+    environment:
+      - SERVER_PORT=8081
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-auth:5432/${AUTH_DB_NAME:-auth_db}
+      - SPRING_DATASOURCE_USERNAME=${AUTH_DB_USER:-auth_user}
+      - SPRING_DATASOURCE_PASSWORD=${AUTH_DB_PASS:-auth_pass}
+      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-auth:5432/${AUTH_DB_NAME:-auth_db}
+      - SPRING_FLYWAY_USER=${AUTH_DB_USER:-auth_user}
+      - SPRING_FLYWAY_PASSWORD=${AUTH_DB_PASS:-auth_pass}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - SPRING_APPLICATION_NAME=AUTENTICACAO-SERVICE
+      - JWT_SECRET=${AUTH_JWT_SECRET_BASE64}
+      - JWT_EXPIRATION=${AUTH_JWT_EXPIRATION_SECONDS:-28800}
+      - AUTH_JWT_SECRET_BASE64=${AUTH_JWT_SECRET_BASE64}
+      - JAVA_OPTS=-Xms256m -Xmx384m
+    ports:
+      - "8081:8081"
+    networks: [backend]
+
+  catalogo-service:
+    build:
+      context: ./admin
+    container_name: catalogo-service
+    depends_on:
+      registry:
+        condition: service_healthy
+      autenticacao-service:
+        condition: service_healthy
+      postgres-admin:
+        condition: service_healthy
+    environment:
+      - SERVER_PORT=8082
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-admin:5432/${ADMIN_DB_NAME:-admin_db}
+      - SPRING_DATASOURCE_USERNAME=${ADMIN_DB_USER:-admin_user}
+      - SPRING_DATASOURCE_PASSWORD=${ADMIN_DB_PASS:-admin_pass}
+      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-admin:5432/${ADMIN_DB_NAME:-admin_db}
+      - SPRING_FLYWAY_USER=${ADMIN_DB_USER:-admin_user}
+      - SPRING_FLYWAY_PASSWORD=${ADMIN_DB_PASS:-admin_pass}
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - SPRING_APPLICATION_NAME=CATALOGO-SERVICE
+      - AUTH_JWT_SECRET_BASE64=${AUTH_JWT_SECRET_BASE64}
+      - JAVA_OPTS=-Xms256m -Xmx384m
+    ports:
+      - "8082:8082"
+    networks: [backend]
+
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: pgadmin
+    depends_on:
+      postgres-admin:
+        condition: service_healthy
+      postgres-auth:
+        condition: service_healthy
+    env_file:
+      - ./compose.env
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_LISTEN_PORT: 5050
+      PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin                  # <— persistência
+      - ./db/pgadmin/servers.json:/pgadmin4/servers.json:ro
+    ports:
+      - "5050:5050"
+    restart: unless-stopped
+    networks: [backend]

@@ -1,0 +1,32 @@
+auth:
+  jwt:
+    secret: ${AUTH_JWT_SECRET_BASE64:kKm5G2MIj9aMOK/y6v0tXpLHmv8nciqTmrLb+HlJk3k=}
+    expiration: 28800
+
+spring:
+  application:
+    name: CATALOGO-SERVICE
+  profiles:
+    active: dev
+  security:
+    oauth2:
+      resourceserver:
+        jwt: {}
+  jpa:
+    properties:
+      hibernate:
+        jdbc:
+          time_zone: UTC
+    open-in-view: false
+
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+server:
+  port: 8082
