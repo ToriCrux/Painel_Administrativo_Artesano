@@ -5,18 +5,18 @@ on:
     branches: [ "workflow" ]
   pull_request:
     branches: [ "workflow" ]
-  workflow_dispatch: # permite rodar manualmente no GitHub
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-      # 1️⃣ Clonar o repositório
+      # 1️⃣ Clona o repositório
       - name: 📦 Checkout do código
         uses: actions/checkout@v4
 
-      # 2️⃣ Instalar JDK 21 (necessário para Spring Boot)
+      # 2️⃣ Instala JDK 21
       - name: ☕ Configurar JDK 21
         uses: actions/setup-java@v4
         with:
@@ -24,7 +24,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
 
-      # 3️⃣ Cache do Maven para builds mais rápidos
+      # 3️⃣ Cache do Maven
       - name: ⚡ Cache do Maven
         uses: actions/cache@v4
         with:
@@ -38,13 +38,13 @@ jobs:
         run: mvn -B -DskipTests clean package --file admin/pom.xml
 
       # 5️⃣ Build do serviço de autenticação
-      - name: 🔐 Build do auth-service
-        run: mvn -B -DskipTests clean package --file autenticacao_service/pom.xml
+      - name: 🔐 Build do serviço de autenticação
+        run: mvn -B -DskipTests clean package --file autenticacao-service/pom.xml
 
-      # 6️⃣ Build do serviço de registro (ou outro microserviço)
-      - name: 🧾 Build do registro-service
-        run: mvn -B -DskipTests clean package --file registro_service/pom.xml
+      # 6️⃣ Build do serviço de registro
+      - name: 🧾 Build do serviço de registro
+        run: mvn -B -DskipTests clean package --file registro-service/pom.xml
 
-      # 7️⃣ Build do serviço de catálogo (exemplo)
-      - name: 🛒 Build do catalogo-service
-        run: mvn -B -DskipTests clean package --file catalogo_service/pom.xml
+      # 7️⃣ Conclusão
+      - name: ✅ Conclusão
+        run: echo "✅ Build finalizado com sucesso (sem testes)"
