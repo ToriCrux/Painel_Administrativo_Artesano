@@ -1,4 +1,4 @@
-name: 🚀 CI - Build Backend (sem testes)
+name: 🚀 CI - Build Backend (com suporte a variáveis de ambiente)
 
 on:
   push:
@@ -10,6 +10,33 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        ports:
+          - 5434:5432
+        env:
+          POSTGRES_USER: artesano
+          POSTGRES_PASSWORD: artesano
+          POSTGRES_DB: artesano_db
+        options: >-
+          --health-cmd="pg_isready -U artesano"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    env:
+      # 🌐 Variáveis globais (usadas em todos os módulos)
+      SPRING_DATASOURCE_URL: jdbc:postgresql://localhost:5434/artesano_db
+      SPRING_DATASOURCE_USERNAME: artesano
+      SPRING_DATASOURCE_PASSWORD: artesano
+      SPRING_FLYWAY_URL: jdbc:postgresql://localhost:5434/artesano_db
+      SPRING_FLYWAY_USER: artesano
+      SPRING_FLYWAY_PASSWORD: artesano
+      SERVER_PORT: 8080
+      JWT_SECRET: kKm5G2MIj9aMOK/y6v0tXpLHmv8nciqTmrLb+HlJk3k=
+      JWT_EXPIRATION: 28800
 
     steps:
       # 1️⃣ Clona o repositório
