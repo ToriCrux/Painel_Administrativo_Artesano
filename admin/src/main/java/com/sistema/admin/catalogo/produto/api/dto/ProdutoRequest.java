@@ -27,4 +27,6 @@ public record ProdutoRequest(
         Boolean ativo,
 
         String descricao
-) {}
+) {
+
+}
