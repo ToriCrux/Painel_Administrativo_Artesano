@@ -21,12 +21,13 @@ spring:
 
 eureka:
   instance:
-    hostname: localhost
+    prefer-ip-address: true
+    hostname: catalogo-service
   client:
     register-with-eureka: true
     fetch-registry: true
     service-url:
-      defaultZone: http://localhost:8761/eureka/
+      defaultZone: http://registry:8761/eureka/
 
 server:
   port: 8082

@@ -1,0 +1,45 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: API-GATEWAY
+  cloud:
+    gateway:
+      server:
+        webmvc:
+          routes:
+            - id: AUTENTICACAO-SERVICE
+              uri: lb://AUTENTICACAO-SERVICE
+              predicates:
+                - Path=/autenticacao/**
+              filters:
+                - StripPrefix=1
+            - id: CATALOGO-SERVICE
+              uri: lb://CATALOGO-SERVICE
+              predicates:
+                - Path=/catalogo/**
+              filters:
+                - StripPrefix=1
+            - id: ESTOQUE-SERVICE
+              uri: lb://ESTOQUE-SERVICE
+              predicates:
+                - Path=/estoque/**
+              filters:
+                - StripPrefix=1
+            - id: PROPOSTA-SERVICE
+              uri: lb://PROPOSTA-SERVICE
+              predicates:
+                - Path=/proposta/**
+              filters:
+                - StripPrefix=1
+
+eureka:
+  instance:
+    prefer-ip-address: true
+    hostname: api-gateway
+  client:
+    register-with-eureka: true
+    fetch-registry: true
+    service-url:
+      defaultZone: http://registry:8761/eureka/

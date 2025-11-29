@@ -1,15 +1,15 @@
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5434/admin_db
-    username: admin_user
-    password: admin_pass
+    url: jdbc:postgresql://localhost:5434/catalogo_db
+    username: catalogo_user
+    password: catalogo_pass
     driver-class-name: org.postgresql.Driver
 
   flyway:
     enabled: true
-    url: jdbc:postgresql://localhost:5434/admin_db
-    user: admin_user
-    password: admin_pass
+    url: jdbc:postgresql://localhost:5434/catalogo_db
+    user: catalogo_user
+    password: catalogo_pass
     locations: classpath:db/migration
     baseline-on-migrate: true
 

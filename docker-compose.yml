@@ -6,9 +6,10 @@ networks:
 
 volumes:
   pg_auth_data:
-  pg_admin_data:
+  pg_catalogo_data:
   pg_estoque_data:
-  pgadmin_data:   # <— volume para o PgAdmin
+  pg_proposta_data:
+  pgadmin_data:
 
 services:
   registry:
@@ -30,6 +31,30 @@ services:
       start_period: 20s
     networks: [backend]
 
+  api-gateway:
+    build:
+      context: ./api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    depends_on:
+      registry:
+        condition: service_healthy
+    environment:
+      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
+      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
+      - SERVER_PORT=8080
+      - SPRING_PROFILES_ACTIVE=docker
+      - JAVA_OPTS=-Xms128m -Xmx256m
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'" ]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+    networks: [ backend ]
+
   postgres-auth:
     image: postgres:16
     container_name: postgres-auth
@@ -48,19 +73,19 @@ services:
       retries: 30
     networks: [backend]
 
-  postgres-admin:
+  postgres-catalogo:
     image: postgres:16
-    container_name: postgres-admin
+    container_name: postgres-catalogo
     environment:
-      - POSTGRES_DB=${ADMIN_DB_NAME:-admin_db}
-      - POSTGRES_USER=${ADMIN_DB_USER:-admin_user}
-      - POSTGRES_PASSWORD=${ADMIN_DB_PASS:-admin_pass}
+      - POSTGRES_DB=${CATALOGO_DB_NAME:-catalogo_db}
+      - POSTGRES_USER=${CATALOGO_DB_USER:-catalogo_user}
+      - POSTGRES_PASSWORD=${CATALOGO_DB_PASS:-catalogo_pass}
     ports:
       - "5434:5432"
     volumes:
-      - pg_admin_data:/var/lib/postgresql/data
+      - pg_catalogo_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${ADMIN_DB_USER:-admin_user} -d ${ADMIN_DB_NAME:-admin_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${CATALOGO_DB_USER:-catalogo_user} -d ${CATALOGO_DB_NAME:-catalogo_db}"]
       interval: 5s
       timeout: 3s
       retries: 30
@@ -92,7 +117,7 @@ services:
       - POSTGRES_USER=${PROPOSTA_DB_USER:-proposta_user}
       - POSTGRES_PASSWORD=${PROPOSTA_DB_PASS:-proposta_pass}
     ports:
-      - "5433:5432"
+      - "5432:5432"
     volumes:
       - pg_proposta_data:/var/lib/postgresql/data
     healthcheck:
@@ -133,26 +158,26 @@ services:
 
   catalogo-service:
     build:
-      context: ./admin
+      context: ./catalogo-service
     container_name: catalogo-service
     depends_on:
       registry:
         condition: service_healthy
       autenticacao-service:
         condition: service_healthy
-      postgres-admin:
+      postgres-catalogo:
         condition: service_healthy
       rabbitmq:
         condition: service_started
     environment:
       - SERVER_PORT=8082
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-admin:5432/${ADMIN_DB_NAME:-admin_db}
-      - SPRING_DATASOURCE_USERNAME=${ADMIN_DB_USER:-admin_user}
-      - SPRING_DATASOURCE_PASSWORD=${ADMIN_DB_PASS:-admin_pass}
-      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-admin:5432/${ADMIN_DB_NAME:-admin_db}
-      - SPRING_FLYWAY_USER=${ADMIN_DB_USER:-admin_user}
-      - SPRING_FLYWAY_PASSWORD=${ADMIN_DB_PASS:-admin_pass}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-catalogo:5432/${CATALOGO_DB_NAME:-catalogo_db}
+      - SPRING_DATASOURCE_USERNAME=${CATALOGO_DB_USER:-catalogo_user}
+      - SPRING_DATASOURCE_PASSWORD=${CATALOGO_DB_PASS:-catalogo_pass}
+      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-catalogo:5432/${CATALOGO_DB_NAME:-catalogo_db}
+      - SPRING_FLYWAY_USER=${CATALOGO_DB_USER:-catalogo_user}
+      - SPRING_FLYWAY_PASSWORD=${CATALOGO_DB_PASS:-catalogo_pass}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
       - SPRING_APPLICATION_NAME=CATALOGO-SERVICE
@@ -217,12 +242,12 @@ services:
     environment:
       - SERVER_PORT=8083
       - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-proposta:5432/${ESTOQUE_DB_NAME:-proposta_db}
-      - SPRING_DATASOURCE_USERNAME=${ESTOQUE_DB_USER:-proposta_user}
-      - SPRING_DATASOURCE_PASSWORD=${ESTOQUE_DB_PASS:-proposta_pass}
-      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-proposta:5432/${ESTOQUE_DB_NAME:-proposta_db}
-      - SPRING_FLYWAY_USER=${ESTOQUE_DB_USER:-proposta_user}
-      - SPRING_FLYWAY_PASSWORD=${ESTOQUE_DB_PASS:-proposta_pass}
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-proposta:5432/${PROPOSTA_DB_NAME:-proposta_db}
+      - SPRING_DATASOURCE_USERNAME=${PROPOSTA_DB_USER:-proposta_user}
+      - SPRING_DATASOURCE_PASSWORD=${PROPOSTA_DB_PASS:-proposta_pass}
+      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-proposta:5432/${PROPOSTA_DB_NAME:-proposta_db}
+      - SPRING_FLYWAY_USER=${PROPOSTA_DB_USER:-proposta_user}
+      - SPRING_FLYWAY_PASSWORD=${PROPOSTA_DB_PASS:-proposta_pass}
       - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
       - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
       - SPRING_APPLICATION_NAME=PROPOSTA-SERVICE
@@ -251,10 +276,14 @@ services:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
     depends_on:
-      postgres-admin:
-        condition: service_healthy
       postgres-auth:
         condition: service_healthy
+      postgres-catalogo:
+        condition: service_healthy
+      postgres-estoque:
+          condition: service_healthy
+      postgres-proposta:
+          condition: service_healthy
     env_file:
       - ./compose.env
     environment:
