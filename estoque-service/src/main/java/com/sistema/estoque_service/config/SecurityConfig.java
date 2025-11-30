@@ -75,7 +75,7 @@ public class SecurityConfig {
 							"/swagger-ui/**",
 							"/swagger-ui.html"
 					).permitAll()
-					.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+					.requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/prometheus").permitAll()
 					.anyRequest().authenticated()
 			)
 			// Resource Server com JWT

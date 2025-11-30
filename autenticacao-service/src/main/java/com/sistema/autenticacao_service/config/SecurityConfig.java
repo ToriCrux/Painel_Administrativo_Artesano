@@ -58,7 +58,7 @@ public class SecurityConfig {
 					// Swagger / Docs
 					.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
 					// Health
-					.requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+					.requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/prometheus").permitAll()
 					// Auth público
 					.requestMatchers(HttpMethod.POST, "/api/v1/auth/login", "/api/v1/auth/register").permitAll()
 					// Demais rotas
