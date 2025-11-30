@@ -1,0 +1,38 @@
+global:
+  scrape_interval: 10s
+  evaluation_interval: 10s
+
+scrape_configs:
+  - job_name: prometheus
+    static_configs:
+      - targets: ["prometheus:9090"]
+
+  - job_name: registry
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["registry:8761"]
+
+  - job_name: api-gateway
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["api-gateway:8080"]
+
+  - job_name: autenticacao-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["autenticacao-service:8081"]
+
+  - job_name: catalogo-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["catalogo-service:8082"]
+
+  - job_name: estoque-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["estoque-service:8083"]
+
+  - job_name: proposta-service
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["proposta-service:8084"]

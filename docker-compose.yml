@@ -10,27 +10,98 @@ volumes:
   pg_estoque_data:
   pg_proposta_data:
   pgadmin_data:
+  app_logs:
+  grafana_data:
 
 services:
+  # =========================
+  # SERVICE DISCOVERY (EUREKA)
+  # =========================
   registry:
     build:
       context: ./registro-service
       dockerfile: Dockerfile
     container_name: service-registry
     environment:
-      - SERVER_PORT=8761
-      - SPRING_PROFILES_ACTIVE=docker
-      - JAVA_OPTS=-Xms128m -Xmx256m
+      SERVER_PORT: "8761"
+      SPRING_PROFILES_ACTIVE: docker
+      JAVA_OPTS: -Xms128m -Xmx256m
+      LOGGING_FILE_NAME: /var/log/app/registry.log
+      LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
     ports:
       - "8761:8761"
+    volumes:
+      - app_logs:/var/log/app
     healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep -q '\"status\":\"UP\"'"]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8761/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 20
       start_period: 20s
+    restart: unless-stopped
     networks: [backend]
 
+  # ==========
+  # OBSERVABILITY
+  # ==========
+  zipkin:
+    image: openzipkin/zipkin:latest
+    container_name: zipkin
+    ports:
+      - "9411:9411"
+    restart: unless-stopped
+    networks: [backend]
+
+  loki:
+    image: grafana/loki:2.9.10
+    container_name: loki
+    command: [ "-config.file=/etc/loki/local-config.yaml" ]
+    ports:
+      - "3100:3100"
+    restart: unless-stopped
+    networks: [backend]
+
+  promtail:
+    image: grafana/promtail:2.9.10
+    container_name: promtail
+    command: [ "-config.file=/etc/promtail/config.yml" ]
+    volumes:
+      - app_logs:/var/log/app:ro
+      - ./observability/promtail-config.yml:/etc/promtail/config.yml:ro
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks: [backend]
+
+  prometheus:
+    image: prom/prometheus:v2.54.1
+    container_name: prometheus
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    ports:
+      - "9090:9090"
+    restart: unless-stopped
+    networks: [backend]
+
+  grafana:
+    image: grafana/grafana-oss:11.3.0
+    container_name: grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - loki
+      - prometheus
+    restart: unless-stopped
+    networks: [backend]
+
+  # ==========
+  # API GATEWAY
+  # ==========
   api-gateway:
     build:
       context: ./api-gateway
@@ -40,28 +111,45 @@ services:
       registry:
         condition: service_healthy
     environment:
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
-      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-      - SERVER_PORT=8080
-      - SPRING_PROFILES_ACTIVE=docker
-      - JAVA_OPTS=-Xms128m -Xmx256m
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+      SERVER_PORT: "8080"
+      SPRING_PROFILES_ACTIVE: docker
+      JAVA_OPTS: -Xms128m -Xmx256m
+
+      # tracing
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+
+      # actuator/metrics
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
+
+      # logs
+      LOGGING_FILE_NAME: /var/log/app/api-gateway.log
+      LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
     ports:
       - "8080:8080"
+    volumes:
+      - app_logs:/var/log/app
     healthcheck:
-      test: [ "CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"'" ]
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
       interval: 10s
       timeout: 3s
       retries: 20
       start_period: 20s
-    networks: [ backend ]
+    restart: unless-stopped
+    networks: [backend]
 
+  # ==========
+  # DATABASES
+  # ==========
   postgres-auth:
     image: postgres:16
     container_name: postgres-auth
     environment:
-      - POSTGRES_DB=${AUTH_DB_NAME:-auth_db}
-      - POSTGRES_USER=${AUTH_DB_USER:-auth_user}
-      - POSTGRES_PASSWORD=${AUTH_DB_PASS:-auth_pass}
+      POSTGRES_DB: ${AUTH_DB_NAME:-auth_db}
+      POSTGRES_USER: ${AUTH_DB_USER:-auth_user}
+      POSTGRES_PASSWORD: ${AUTH_DB_PASS:-auth_pass}
     ports:
       - "5435:5432"
     volumes:
@@ -71,17 +159,18 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
+    restart: unless-stopped
     networks: [backend]
 
   postgres-catalogo:
     image: postgres:16
     container_name: postgres-catalogo
     environment:
-      - POSTGRES_DB=${CATALOGO_DB_NAME:-catalogo_db}
-      - POSTGRES_USER=${CATALOGO_DB_USER:-catalogo_user}
-      - POSTGRES_PASSWORD=${CATALOGO_DB_PASS:-catalogo_pass}
+      POSTGRES_DB: ${CATALOGO_DB_NAME:-catalogo_db}
+      POSTGRES_USER: ${CATALOGO_DB_USER:-catalogo_user}
+      POSTGRES_PASSWORD: ${CATALOGO_DB_PASS:-catalogo_pass}
     ports:
-      - "5434:5432"
+      - "5436:5432"
     volumes:
       - pg_catalogo_data:/var/lib/postgresql/data
     healthcheck:
@@ -89,17 +178,18 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
+    restart: unless-stopped
     networks: [backend]
 
   postgres-estoque:
     image: postgres:16
     container_name: postgres-estoque
     environment:
-      - POSTGRES_DB=${ESTOQUE_DB_NAME:-estoque_db}
-      - POSTGRES_USER=${ESTOQUE_DB_USER:-estoque_user}
-      - POSTGRES_PASSWORD=${ESTOQUE_DB_PASS:-estoque_pass}
+      POSTGRES_DB: ${ESTOQUE_DB_NAME:-estoque_db}
+      POSTGRES_USER: ${ESTOQUE_DB_USER:-estoque_user}
+      POSTGRES_PASSWORD: ${ESTOQUE_DB_PASS:-estoque_pass}
     ports:
-      - "5433:5432"
+      - "5437:5432"
     volumes:
       - pg_estoque_data:/var/lib/postgresql/data
     healthcheck:
@@ -107,17 +197,18 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
+    restart: unless-stopped
     networks: [backend]
 
   postgres-proposta:
     image: postgres:16
     container_name: postgres-proposta
     environment:
-      - POSTGRES_DB=${PROPOSTA_DB_NAME:-proposta_db}
-      - POSTGRES_USER=${PROPOSTA_DB_USER:-proposta_user}
-      - POSTGRES_PASSWORD=${PROPOSTA_DB_PASS:-proposta_pass}
+      POSTGRES_DB: ${PROPOSTA_DB_NAME:-proposta_db}
+      POSTGRES_USER: ${PROPOSTA_DB_USER:-proposta_user}
+      POSTGRES_PASSWORD: ${PROPOSTA_DB_PASS:-proposta_pass}
     ports:
-      - "5432:5432"
+      - "5438:5432"
     volumes:
       - pg_proposta_data:/var/lib/postgresql/data
     healthcheck:
@@ -125,8 +216,27 @@ services:
       interval: 5s
       timeout: 3s
       retries: 30
+    restart: unless-stopped
     networks: [backend]
 
+  # ==========
+  # MESSAGING
+  # ==========
+  rabbitmq:
+    image: rabbitmq:3-management
+    container_name: rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    restart: unless-stopped
+    networks: [backend]
+
+  # ==========
+  # MICROSERVICES
+  # ==========
   autenticacao-service:
     build:
       context: ./autenticacao-service
@@ -137,23 +247,43 @@ services:
       postgres-auth:
         condition: service_healthy
     environment:
-      - SERVER_PORT=8081
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-auth:5432/${AUTH_DB_NAME:-auth_db}
-      - SPRING_DATASOURCE_USERNAME=${AUTH_DB_USER:-auth_user}
-      - SPRING_DATASOURCE_PASSWORD=${AUTH_DB_PASS:-auth_pass}
-      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-auth:5432/${AUTH_DB_NAME:-auth_db}
-      - SPRING_FLYWAY_USER=${AUTH_DB_USER:-auth_user}
-      - SPRING_FLYWAY_PASSWORD=${AUTH_DB_PASS:-auth_pass}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
-      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-      - SPRING_APPLICATION_NAME=AUTENTICACAO-SERVICE
-      - JWT_SECRET=${AUTH_JWT_SECRET_BASE64}
-      - JWT_EXPIRATION=${AUTH_JWT_EXPIRATION_SECONDS:-28800}
-      - AUTH_JWT_SECRET_BASE64=${AUTH_JWT_SECRET_BASE64}
-      - JAVA_OPTS=-Xms256m -Xmx384m
+      SERVER_PORT: "8081"
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_NAME: AUTENTICACAO-SERVICE
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/${AUTH_DB_NAME:-auth_db}
+      SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER:-auth_user}
+      SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASS:-auth_pass}
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgres-auth:5432/${AUTH_DB_NAME:-auth_db}
+      SPRING_FLYWAY_USER: ${AUTH_DB_USER:-auth_user}
+      SPRING_FLYWAY_PASSWORD: ${AUTH_DB_PASS:-auth_pass}
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+      JWT_SECRET: ${AUTH_JWT_SECRET_BASE64}
+      JWT_EXPIRATION: ${AUTH_JWT_EXPIRATION_SECONDS:-28800}
+      AUTH_JWT_SECRET_BASE64: ${AUTH_JWT_SECRET_BASE64}
+
+      JAVA_OPTS: -Xms256m -Xmx384m
+
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
+
+      LOGGING_FILE_NAME: /var/log/app/autenticacao-service.log
+      LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
     ports:
       - "8081:8081"
+    volumes:
+      - app_logs:/var/log/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
     networks: [backend]
 
   catalogo-service:
@@ -170,25 +300,45 @@ services:
       rabbitmq:
         condition: service_started
     environment:
-      - SERVER_PORT=8082
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-catalogo:5432/${CATALOGO_DB_NAME:-catalogo_db}
-      - SPRING_DATASOURCE_USERNAME=${CATALOGO_DB_USER:-catalogo_user}
-      - SPRING_DATASOURCE_PASSWORD=${CATALOGO_DB_PASS:-catalogo_pass}
-      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-catalogo:5432/${CATALOGO_DB_NAME:-catalogo_db}
-      - SPRING_FLYWAY_USER=${CATALOGO_DB_USER:-catalogo_user}
-      - SPRING_FLYWAY_PASSWORD=${CATALOGO_DB_PASS:-catalogo_pass}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
-      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-      - SPRING_APPLICATION_NAME=CATALOGO-SERVICE
-      - AUTH_JWT_SECRET_BASE64=${AUTH_JWT_SECRET_BASE64}
-      - JAVA_OPTS=-Xms256m -Xmx384m
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
+      SERVER_PORT: "8082"
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_NAME: CATALOGO-SERVICE
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-catalogo:5432/${CATALOGO_DB_NAME:-catalogo_db}
+      SPRING_DATASOURCE_USERNAME: ${CATALOGO_DB_USER:-catalogo_user}
+      SPRING_DATASOURCE_PASSWORD: ${CATALOGO_DB_PASS:-catalogo_pass}
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgres-catalogo:5432/${CATALOGO_DB_NAME:-catalogo_db}
+      SPRING_FLYWAY_USER: ${CATALOGO_DB_USER:-catalogo_user}
+      SPRING_FLYWAY_PASSWORD: ${CATALOGO_DB_PASS:-catalogo_pass}
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+      AUTH_JWT_SECRET_BASE64: ${AUTH_JWT_SECRET_BASE64}
+      JAVA_OPTS: -Xms256m -Xmx384m
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
+
+      LOGGING_FILE_NAME: /var/log/app/catalogo-service.log
+      LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
     ports:
       - "8082:8082"
+    volumes:
+      - app_logs:/var/log/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
     networks: [backend]
 
   estoque-service:
@@ -205,25 +355,45 @@ services:
       rabbitmq:
         condition: service_started
     environment:
-      - SERVER_PORT=8083
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-estoque:5432/${ESTOQUE_DB_NAME:-estoque_db}
-      - SPRING_DATASOURCE_USERNAME=${ESTOQUE_DB_USER:-estoque_user}
-      - SPRING_DATASOURCE_PASSWORD=${ESTOQUE_DB_PASS:-estoque_pass}
-      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-estoque:5432/${ESTOQUE_DB_NAME:-estoque_db}
-      - SPRING_FLYWAY_USER=${ESTOQUE_DB_USER:-estoque_user}
-      - SPRING_FLYWAY_PASSWORD=${ESTOQUE_DB_PASS:-estoque_pass}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
-      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-      - SPRING_APPLICATION_NAME=ESTOQUE-SERVICE
-      - AUTH_JWT_SECRET_BASE64=${AUTH_JWT_SECRET_BASE64}
-      - JAVA_OPTS=-Xms256m -Xmx384m
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
+      SERVER_PORT: "8083"
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_NAME: ESTOQUE-SERVICE
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-estoque:5432/${ESTOQUE_DB_NAME:-estoque_db}
+      SPRING_DATASOURCE_USERNAME: ${ESTOQUE_DB_USER:-estoque_user}
+      SPRING_DATASOURCE_PASSWORD: ${ESTOQUE_DB_PASS:-estoque_pass}
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgres-estoque:5432/${ESTOQUE_DB_NAME:-estoque_db}
+      SPRING_FLYWAY_USER: ${ESTOQUE_DB_USER:-estoque_user}
+      SPRING_FLYWAY_PASSWORD: ${ESTOQUE_DB_PASS:-estoque_pass}
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+      AUTH_JWT_SECRET_BASE64: ${AUTH_JWT_SECRET_BASE64}
+      JAVA_OPTS: -Xms256m -Xmx384m
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
+
+      LOGGING_FILE_NAME: /var/log/app/estoque-service.log
+      LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
     ports:
       - "8083:8083"
+    volumes:
+      - app_logs:/var/log/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
     networks: [backend]
 
   proposta-service:
@@ -240,38 +410,50 @@ services:
       rabbitmq:
         condition: service_started
     environment:
-      - SERVER_PORT=8083
-      - SPRING_PROFILES_ACTIVE=docker
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres-proposta:5432/${PROPOSTA_DB_NAME:-proposta_db}
-      - SPRING_DATASOURCE_USERNAME=${PROPOSTA_DB_USER:-proposta_user}
-      - SPRING_DATASOURCE_PASSWORD=${PROPOSTA_DB_PASS:-proposta_pass}
-      - SPRING_FLYWAY_URL=jdbc:postgresql://postgres-proposta:5432/${PROPOSTA_DB_NAME:-proposta_db}
-      - SPRING_FLYWAY_USER=${PROPOSTA_DB_USER:-proposta_user}
-      - SPRING_FLYWAY_PASSWORD=${PROPOSTA_DB_PASS:-proposta_pass}
-      - EUREKA_CLIENT_SERVICEURL_DEFAULTZONE=http://registry:8761/eureka/
-      - EUREKA_INSTANCE_PREFER_IP_ADDRESS=true
-      - SPRING_APPLICATION_NAME=PROPOSTA-SERVICE
-      - AUTH_JWT_SECRET_BASE64=${AUTH_JWT_SECRET_BASE64}
-      - JAVA_OPTS=-Xms256m -Xmx384m
-      - SPRING_RABBITMQ_HOST=rabbitmq
-      - SPRING_RABBITMQ_PORT=5672
-      - SPRING_RABBITMQ_USERNAME=guest
-      - SPRING_RABBITMQ_PASSWORD=guest
+      SERVER_PORT: "8084"
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_APPLICATION_NAME: PROPOSTA-SERVICE
+
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-proposta:5432/${PROPOSTA_DB_NAME:-proposta_db}
+      SPRING_DATASOURCE_USERNAME: ${PROPOSTA_DB_USER:-proposta_user}
+      SPRING_DATASOURCE_PASSWORD: ${PROPOSTA_DB_PASS:-proposta_pass}
+      SPRING_FLYWAY_URL: jdbc:postgresql://postgres-proposta:5432/${PROPOSTA_DB_NAME:-proposta_db}
+      SPRING_FLYWAY_USER: ${PROPOSTA_DB_USER:-proposta_user}
+      SPRING_FLYWAY_PASSWORD: ${PROPOSTA_DB_PASS:-proposta_pass}
+
+      EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
+      EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+      AUTH_JWT_SECRET_BASE64: ${AUTH_JWT_SECRET_BASE64}
+      JAVA_OPTS: -Xms256m -Xmx384m
+
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_RABBITMQ_PORT: "5672"
+      SPRING_RABBITMQ_USERNAME: guest
+      SPRING_RABBITMQ_PASSWORD: guest
+
+      MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+      MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
+      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
+
+      LOGGING_FILE_NAME: /var/log/app/proposta-service.log
+      LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
     ports:
       - "8084:8084"
+    volumes:
+      - app_logs:/var/log/app
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
     networks: [backend]
 
-  rabbitmq:
-    image: rabbitmq:3-management
-    container_name: rabbitmq
-    environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-    ports:
-      - "5672:5672"   # porta usada pelo Spring Boot
-      - "15672:15672" # painel web de administração
-    networks: [ backend ]
-
+  # ==========
+  # PGADMIN
+  # ==========
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin
@@ -281,18 +463,18 @@ services:
       postgres-catalogo:
         condition: service_healthy
       postgres-estoque:
-          condition: service_healthy
+        condition: service_healthy
       postgres-proposta:
-          condition: service_healthy
+        condition: service_healthy
     env_file:
       - ./compose.env
     environment:
       PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
       PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
-      PGADMIN_LISTEN_PORT: 5050
+      PGADMIN_LISTEN_PORT: "5050"
       PGADMIN_SERVER_JSON_FILE: /pgadmin4/servers.json
     volumes:
-      - pgadmin_data:/var/lib/pgadmin                  # <— persistência
+      - pgadmin_data:/var/lib/pgadmin
       - ./db/pgadmin/servers.json:/pgadmin4/servers.json:ro
     ports:
       - "5050:5050"
