@@ -20,7 +20,7 @@ public class ProdutoImagemController {
     private final ProdutoImagemService service;
 
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
-    @PreAuthorize("hasRole('USUARIO')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Long> upload(@PathVariable Long produtoId,
                                        @RequestParam("file") MultipartFile file,
                                        @RequestParam(value = "principal", required = false) Boolean principal,
@@ -30,13 +30,13 @@ public class ProdutoImagemController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('USUARIO')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public List<ImagemResumo> listar(@PathVariable Long produtoId) {
         return service.listar(produtoId).stream().map(ImagemResumo::from).toList();
     }
 
     @GetMapping("/{imagemId}")
-    @PreAuthorize("hasRole('USUARIO')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<byte[]> download(@PathVariable Long produtoId, @PathVariable Long imagemId) {
         ProdutoImagem img = service.obter(produtoId, imagemId);
         String ct = img.getContentType() != null ? img.getContentType() : MediaType.APPLICATION_OCTET_STREAM_VALUE;
@@ -48,14 +48,14 @@ public class ProdutoImagemController {
     }
 
     @DeleteMapping("/{imagemId}")
-    @PreAuthorize("hasRole('USUARIO')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> remover(@PathVariable Long produtoId, @PathVariable Long imagemId) {
         service.remover(produtoId, imagemId);
         return ResponseEntity.noContent().build();
     }
 
     @PatchMapping("/{imagemId}/principal")
-    @PreAuthorize("hasRole('USUARIO')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<Void> marcarPrincipal(@PathVariable Long produtoId, @PathVariable Long imagemId) {
         service.tornarPrincipal(produtoId, imagemId);
         return ResponseEntity.noContent().build();
