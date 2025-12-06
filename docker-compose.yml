@@ -10,6 +10,7 @@ volumes:
   pg_estoque_data:
   pg_proposta_data:
   pgadmin_data:
+  mongo_data:
   app_logs:
   grafana_data:
 
@@ -41,9 +42,9 @@ services:
     restart: unless-stopped
     networks: [backend]
 
-  # ==========
+  # =========================
   # OBSERVABILITY
-  # ==========
+  # =========================
   zipkin:
     image: openzipkin/zipkin:latest
     container_name: zipkin
@@ -99,9 +100,9 @@ services:
     restart: unless-stopped
     networks: [backend]
 
-  # ==========
+  # =========================
   # API GATEWAY
-  # ==========
+  # =========================
   api-gateway:
     build:
       context: ./api-gateway
@@ -140,9 +141,9 @@ services:
     restart: unless-stopped
     networks: [backend]
 
-  # ==========
+  # =========================
   # DATABASES
-  # ==========
+  # =========================
   postgres-auth:
     image: postgres:16
     container_name: postgres-auth
@@ -219,9 +220,22 @@ services:
     restart: unless-stopped
     networks: [backend]
 
-  # ==========
+  # =========================
+  # NOSQL DATABASE (MONGO)
+  # =========================
+  mongo:
+    image: mongo:6
+    container_name: mongo
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+    networks: [backend]
+
+  # =========================
   # MESSAGING
-  # ==========
+  # =========================
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
@@ -234,9 +248,9 @@ services:
     restart: unless-stopped
     networks: [backend]
 
-  # ==========
+  # =========================
   # MICROSERVICES
-  # ==========
+  # =========================
   autenticacao-service:
     build:
       context: ./autenticacao-service
@@ -246,11 +260,14 @@ services:
         condition: service_healthy
       postgres-auth:
         condition: service_healthy
+      mongo:
+        condition: service_started
     environment:
       SERVER_PORT: "8081"
       SPRING_PROFILES_ACTIVE: docker
       SPRING_APPLICATION_NAME: AUTENTICACAO-SERVICE
 
+      # PostgreSQL
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-auth:5432/${AUTH_DB_NAME:-auth_db}
       SPRING_DATASOURCE_USERNAME: ${AUTH_DB_USER:-auth_user}
       SPRING_DATASOURCE_PASSWORD: ${AUTH_DB_PASS:-auth_pass}
@@ -258,19 +275,26 @@ services:
       SPRING_FLYWAY_USER: ${AUTH_DB_USER:-auth_user}
       SPRING_FLYWAY_PASSWORD: ${AUTH_DB_PASS:-auth_pass}
 
+      # MongoDB
+      SPRING_DATA_MONGODB_URI: mongodb://mongo:27017/autenticacao-db
+
+      # Eureka
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
 
+      # JWT
       JWT_SECRET: ${AUTH_JWT_SECRET_BASE64}
       JWT_EXPIRATION: ${AUTH_JWT_EXPIRATION_SECONDS:-28800}
       AUTH_JWT_SECRET_BASE64: ${AUTH_JWT_SECRET_BASE64}
 
       JAVA_OPTS: -Xms256m -Xmx384m
 
+      # Observability
       MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
 
+      # Logging
       LOGGING_FILE_NAME: /var/log/app/autenticacao-service.log
       LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
     ports:
@@ -282,7 +306,7 @@ services:
       interval: 10s
       timeout: 3s
       retries: 20
-      start_period: 20s
+      start_period: 60s
     restart: unless-stopped
     networks: [backend]
 
@@ -303,29 +327,23 @@ services:
       SERVER_PORT: "8082"
       SPRING_PROFILES_ACTIVE: docker
       SPRING_APPLICATION_NAME: CATALOGO-SERVICE
-
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-catalogo:5432/${CATALOGO_DB_NAME:-catalogo_db}
       SPRING_DATASOURCE_USERNAME: ${CATALOGO_DB_USER:-catalogo_user}
       SPRING_DATASOURCE_PASSWORD: ${CATALOGO_DB_PASS:-catalogo_pass}
       SPRING_FLYWAY_URL: jdbc:postgresql://postgres-catalogo:5432/${CATALOGO_DB_NAME:-catalogo_db}
       SPRING_FLYWAY_USER: ${CATALOGO_DB_USER:-catalogo_user}
       SPRING_FLYWAY_PASSWORD: ${CATALOGO_DB_PASS:-catalogo_pass}
-
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
-
       AUTH_JWT_SECRET_BASE64: ${AUTH_JWT_SECRET_BASE64}
       JAVA_OPTS: -Xms256m -Xmx384m
-
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: "5672"
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
-
       MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
-
       LOGGING_FILE_NAME: /var/log/app/catalogo-service.log
       LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
     ports:
@@ -358,29 +376,23 @@ services:
       SERVER_PORT: "8083"
       SPRING_PROFILES_ACTIVE: docker
       SPRING_APPLICATION_NAME: ESTOQUE-SERVICE
-
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-estoque:5432/${ESTOQUE_DB_NAME:-estoque_db}
       SPRING_DATASOURCE_USERNAME: ${ESTOQUE_DB_USER:-estoque_user}
       SPRING_DATASOURCE_PASSWORD: ${ESTOQUE_DB_PASS:-estoque_pass}
       SPRING_FLYWAY_URL: jdbc:postgresql://postgres-estoque:5432/${ESTOQUE_DB_NAME:-estoque_db}
       SPRING_FLYWAY_USER: ${ESTOQUE_DB_USER:-estoque_user}
       SPRING_FLYWAY_PASSWORD: ${ESTOQUE_DB_PASS:-estoque_pass}
-
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
-
       AUTH_JWT_SECRET_BASE64: ${AUTH_JWT_SECRET_BASE64}
       JAVA_OPTS: -Xms256m -Xmx384m
-
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: "5672"
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
-
       MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
-
       LOGGING_FILE_NAME: /var/log/app/estoque-service.log
       LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
     ports:
@@ -413,29 +425,23 @@ services:
       SERVER_PORT: "8084"
       SPRING_PROFILES_ACTIVE: docker
       SPRING_APPLICATION_NAME: PROPOSTA-SERVICE
-
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-proposta:5432/${PROPOSTA_DB_NAME:-proposta_db}
       SPRING_DATASOURCE_USERNAME: ${PROPOSTA_DB_USER:-proposta_user}
       SPRING_DATASOURCE_PASSWORD: ${PROPOSTA_DB_PASS:-proposta_pass}
       SPRING_FLYWAY_URL: jdbc:postgresql://postgres-proposta:5432/${PROPOSTA_DB_NAME:-proposta_db}
       SPRING_FLYWAY_USER: ${PROPOSTA_DB_USER:-proposta_user}
       SPRING_FLYWAY_PASSWORD: ${PROPOSTA_DB_PASS:-proposta_pass}
-
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
-
       AUTH_JWT_SECRET_BASE64: ${AUTH_JWT_SECRET_BASE64}
       JAVA_OPTS: -Xms256m -Xmx384m
-
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: "5672"
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
-
       MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
       MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
-
       LOGGING_FILE_NAME: /var/log/app/proposta-service.log
       LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
     ports:
@@ -451,9 +457,9 @@ services:
     restart: unless-stopped
     networks: [backend]
 
-  # ==========
+  # =========================
   # PGADMIN
-  # ==========
+  # =========================
   pgadmin:
     image: dpage/pgadmin4:latest
     container_name: pgadmin

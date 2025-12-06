@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: artesano-secrets
+  namespace: artesano
+type: Opaque
+stringData:
+  # veio do seu .env
+  AUTH_JWT_SECRET_BASE64: "kKm5G2MIj9aMOK/y6v0tXpLHmv8nciqTmrLb+HlJk3k="
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: artesano-config
+  namespace: artesano
+data:
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: "http://registry:8761/eureka/"
+  EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+  MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
+  MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: "http://zipkin:9411/api/v2/spans"
+  MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,prometheus"
+
+  SPRING_RABBITMQ_HOST: "rabbitmq"
+  SPRING_RABBITMQ_PORT: "5672"
+  SPRING_RABBITMQ_USERNAME: "guest"
+  SPRING_RABBITMQ_PASSWORD: "guest"

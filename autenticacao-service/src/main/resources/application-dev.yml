@@ -13,8 +13,8 @@ management:
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5434/authentication_db
-#    username: postgres
-#    password: postgres
+    # username: postgres
+    # password: postgres
     username: admin_user
     password: admin_pass
     driver-class-name: org.postgresql.Driver
@@ -22,8 +22,8 @@ spring:
   flyway:
     enabled: true
     url: jdbc:postgresql://localhost:5434/authentication_db
-#    user: postgres
-#    password: postgres
+    # user: postgres
+    # password: postgres
     user: admin_user
     password: admin_pass
     locations: classpath:db/migration
@@ -37,6 +37,11 @@ spring:
       hibernate.format_sql: true
       hibernate.jdbc.time_zone: UTC
     open-in-view: false
+
+  data:
+    mongodb:
+      uri: mongodb://mongo:27017/autenticacao-db
+      database: autenticacao-db
 
 server:
   error:
