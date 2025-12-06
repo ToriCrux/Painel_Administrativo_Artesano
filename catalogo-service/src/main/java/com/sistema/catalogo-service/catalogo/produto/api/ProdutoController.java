@@ -50,19 +50,19 @@ public class ProdutoController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('USUARIO')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<ProdutoResponse> atualizarProduto(@PathVariable Long id, @RequestBody @Valid ProdutoRequest produtoRequest) {
         return ResponseEntity.status(HttpStatus.CREATED).body(produtoService.atualizar(id, produtoRequest));
     }
 
     @PatchMapping("/{id}/status")
-    @PreAuthorize("hasRole('USUARIO')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<ProdutoResponse> desativarProduto(@PathVariable Long id) {
         return ResponseEntity.status(HttpStatus.CREATED).body(produtoService.desativar(id));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('USUARIO')")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public void deletar(@PathVariable Long id) {
         produtoService.deletar(id);
     }
