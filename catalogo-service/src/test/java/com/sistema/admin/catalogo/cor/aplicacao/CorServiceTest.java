@@ -1,11 +1,13 @@
 package com.sistema.admin.catalogo.cor.aplicacao;
 
-import com.sistema.admin.catalogo.cor.api.dto.CorRequest;
-import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
-import com.sistema.admin.catalogo.cor.dominio.Cor;
-import com.sistema.admin.catalogo.cor.infra.CorRepository;
-import com.sistema.admin.config.exception.ConflictException;
-import com.sistema.admin.config.exception.NotFoundException;
+
+import com.sistema.catalogoservice.catalogo.cor.api.dto.CorRequest;
+import com.sistema.catalogoservice.catalogo.cor.api.dto.CorResponse;
+import com.sistema.catalogoservice.catalogo.cor.aplicacao.CorService;
+import com.sistema.catalogoservice.catalogo.cor.dominio.Cor;
+import com.sistema.catalogoservice.catalogo.cor.infra.CorRepository;
+import com.sistema.catalogoservice.config.exception.ConflictException;
+import com.sistema.catalogoservice.config.exception.NotFoundException;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

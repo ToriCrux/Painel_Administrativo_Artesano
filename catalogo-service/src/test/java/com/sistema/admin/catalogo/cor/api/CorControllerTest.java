@@ -1,8 +1,10 @@
 package com.sistema.admin.catalogo.cor.api;
 
-import com.sistema.admin.catalogo.cor.api.dto.CorRequest;
-import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
-import com.sistema.admin.catalogo.cor.aplicacao.CorService;
+
+import com.sistema.catalogoservice.catalogo.cor.api.CorController;
+import com.sistema.catalogoservice.catalogo.cor.api.dto.CorRequest;
+import com.sistema.catalogoservice.catalogo.cor.api.dto.CorResponse;
+import com.sistema.catalogoservice.catalogo.cor.aplicacao.CorService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

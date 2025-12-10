@@ -72,7 +72,33 @@ CREATE TABLE IF NOT EXISTS tb_usuario_role (
   PRIMARY KEY (usuario_id, role_id)
 );
 
+CREATE TABLE IF NOT EXISTS tb_campo_exibicao_padrao (
+    id BIGSERIAL PRIMARY KEY,
+    nome VARCHAR(50) NOT NULL UNIQUE,
+    visivel_padrao BOOLEAN NOT NULL DEFAULT TRUE
+);
+
+-- Campos iniciais padrão
+INSERT INTO tb_campo_exibicao_padrao (nome, visivel_padrao) VALUES
+('codigo', true),
+('nome', true),
+('descricao', true),
+('precoUnitario', true),
+('ativo', true);
+
+
+------------ Configuração de Exibição de Produto ------------
+CREATE TABLE IF NOT EXISTS tb_produto_campo_exibicao (
+    id BIGSERIAL PRIMARY KEY,
+    produto_id BIGINT NOT NULL,
+    campo VARCHAR(50) NOT NULL,
+    visivel BOOLEAN NOT NULL DEFAULT TRUE,
+    atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    UNIQUE (produto_id, campo)
+);
+
+CREATE INDEX IF NOT EXISTS idx_produto_campo_exibicao_produto
+    ON tb_produto_campo_exibicao (produto_id);
 
 ------------ Índices úteis ------------
 CREATE INDEX IF NOT EXISTS idx_usuario_email ON tb_usuario(email);
-

@@ -1,7 +1,9 @@
 package com.sistema.admin.catalogo.produtoimagem.api;
 
-import com.sistema.admin.catalogo.produtoimagem.aplicacao.ProdutoImagemService;
-import com.sistema.admin.catalogo.produtoimagem.dominio.ProdutoImagem;
+
+import com.sistema.catalogoservice.catalogo.produtoimagem.api.ProdutoImagemController;
+import com.sistema.catalogoservice.catalogo.produtoimagem.aplicacao.ProdutoImagemService;
+import com.sistema.catalogoservice.catalogo.produtoimagem.dominio.ProdutoImagem;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

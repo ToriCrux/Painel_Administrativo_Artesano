@@ -1,6 +1,7 @@
 package com.sistema.admin.catalogo.categoria.api.dto;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.sistema.catalogoservice.catalogo.categoria.api.dto.CategoriaRequest;
 import jakarta.validation.*;
 import org.junit.jupiter.api.*;
 

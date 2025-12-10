@@ -1,8 +1,9 @@
 package com.sistema.admin.catalogo.categoria.api;
 
-import com.sistema.admin.catalogo.categoria.api.dto.CategoriaRequest;
-import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
-import com.sistema.admin.catalogo.categoria.aplicacao.CategoriaService;
+import com.sistema.catalogoservice.catalogo.categoria.api.CategoriaController;
+import com.sistema.catalogoservice.catalogo.categoria.api.dto.CategoriaRequest;
+import com.sistema.catalogoservice.catalogo.categoria.api.dto.CategoriaResponse;
+import com.sistema.catalogoservice.catalogo.categoria.aplicacao.CategoriaService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

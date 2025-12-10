@@ -1,8 +1,10 @@
 package com.sistema.admin.catalogo.produto.api.dto;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
-import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
+
+import com.sistema.catalogoservice.catalogo.categoria.api.dto.CategoriaResponse;
+import com.sistema.catalogoservice.catalogo.cor.api.dto.CorResponse;
+import com.sistema.catalogoservice.catalogo.produto.api.dto.ProdutoResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

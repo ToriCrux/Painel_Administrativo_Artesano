@@ -1,21 +1,22 @@
 package com.sistema.admin.catalogo.produto.aplicacao;
 
-import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
-import com.sistema.admin.catalogo.categoria.dominio.Categoria;
-import com.sistema.admin.catalogo.categoria.infra.CategoriaRepository;
-import com.sistema.admin.catalogo.cor.api.dto.CorResponse;
-import com.sistema.admin.catalogo.cor.dominio.Cor;
-import com.sistema.admin.catalogo.cor.infra.CorRepository;
-import com.sistema.admin.catalogo.produto.api.dto.ProdutoRequest;
-import com.sistema.admin.catalogo.produto.api.dto.ProdutoResponse;
-import com.sistema.admin.catalogo.produto.dominio.Produto;
-import com.sistema.admin.catalogo.produto.infra.ProdutoRepository;
-import com.sistema.admin.catalogo.produtoimagem.dominio.ProdutoImagem; // ajuste se necessário
-import com.sistema.admin.catalogo.produtoimagem.infra.ProdutoImagemRepository;
-import com.sistema.admin.config.exception.ConflictException;
-import com.sistema.admin.config.exception.NotFoundException;
-import com.sistema.admin.mensageria.RabbitMQConfig;
-import com.sistema.admin.mensageria.evento.ProdutoCriadoEvent;
+
+import com.sistema.catalogoservice.catalogo.categoria.api.dto.CategoriaResponse;
+import com.sistema.catalogoservice.catalogo.categoria.dominio.Categoria;
+import com.sistema.catalogoservice.catalogo.categoria.infra.CategoriaRepository;
+import com.sistema.catalogoservice.catalogo.cor.dominio.Cor;
+import com.sistema.catalogoservice.catalogo.cor.infra.CorRepository;
+import com.sistema.catalogoservice.catalogo.produto.api.dto.ProdutoRequest;
+import com.sistema.catalogoservice.catalogo.produto.api.dto.ProdutoResponse;
+import com.sistema.catalogoservice.catalogo.produto.aplicacao.ProdutoService;
+import com.sistema.catalogoservice.catalogo.produto.dominio.Produto;
+import com.sistema.catalogoservice.catalogo.produto.infra.ProdutoRepository;
+import com.sistema.catalogoservice.catalogo.produtoimagem.dominio.ProdutoImagem;
+import com.sistema.catalogoservice.catalogo.produtoimagem.infra.ProdutoImagemRepository;
+import com.sistema.catalogoservice.config.exception.ConflictException;
+import com.sistema.catalogoservice.config.exception.NotFoundException;
+import com.sistema.catalogoservice.mensageria.RabbitMQConfig;
+import com.sistema.catalogoservice.mensageria.evento.ProdutoCriadoEvent;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -36,13 +37,18 @@ import static org.mockito.Mockito.*;
 @ExtendWith(MockitoExtension.class)
 class ProdutoServiceTest {
 
-	@Mock ProdutoRepository produtoRepository;
-	@Mock CategoriaRepository categoriaRepository;
-	@Mock CorRepository corRepository;
-	@Mock ProdutoImagemRepository produtoImagemRepository;
+	@Mock
+	ProdutoRepository produtoRepository;
+	@Mock
+	CategoriaRepository categoriaRepository;
+	@Mock
+	CorRepository corRepository;
+	@Mock
+	ProdutoImagemRepository produtoImagemRepository;
 	@Mock RabbitTemplate rabbitTemplate;
 
-	@InjectMocks ProdutoService produtoService;
+	@InjectMocks
+	ProdutoService produtoService;
 
 	@Captor ArgumentCaptor<Produto> produtoCaptor;
 	@Captor ArgumentCaptor<Object> eventoCaptor;

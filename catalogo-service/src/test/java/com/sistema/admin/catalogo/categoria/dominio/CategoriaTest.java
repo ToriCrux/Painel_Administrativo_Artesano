@@ -1,5 +1,6 @@
 package com.sistema.admin.catalogo.categoria.dominio;
 
+import com.sistema.catalogoservice.catalogo.categoria.dominio.Categoria;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

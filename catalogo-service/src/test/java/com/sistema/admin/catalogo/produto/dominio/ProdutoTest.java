@@ -1,7 +1,9 @@
 package com.sistema.admin.catalogo.produto.dominio;
 
-import com.sistema.admin.catalogo.categoria.dominio.Categoria;
-import com.sistema.admin.catalogo.cor.dominio.Cor;
+
+import com.sistema.catalogoservice.catalogo.categoria.dominio.Categoria;
+import com.sistema.catalogoservice.catalogo.cor.dominio.Cor;
+import com.sistema.catalogoservice.catalogo.produto.dominio.Produto;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

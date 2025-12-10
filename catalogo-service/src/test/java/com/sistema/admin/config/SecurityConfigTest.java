@@ -1,5 +1,6 @@
 package com.sistema.admin.config;
 
+import com.sistema.catalogoservice.config.SecurityConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;

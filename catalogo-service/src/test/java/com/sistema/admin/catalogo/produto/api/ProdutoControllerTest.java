@@ -1,8 +1,10 @@
 package com.sistema.admin.catalogo.produto.api;
 
-import com.sistema.admin.catalogo.produto.api.dto.ProdutoRequest;
-import com.sistema.admin.catalogo.produto.api.dto.ProdutoResponse;
-import com.sistema.admin.catalogo.produto.aplicacao.ProdutoService;
+
+import com.sistema.catalogoservice.catalogo.produto.api.ProdutoController;
+import com.sistema.catalogoservice.catalogo.produto.api.dto.ProdutoRequest;
+import com.sistema.catalogoservice.catalogo.produto.api.dto.ProdutoResponse;
+import com.sistema.catalogoservice.catalogo.produto.aplicacao.ProdutoService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

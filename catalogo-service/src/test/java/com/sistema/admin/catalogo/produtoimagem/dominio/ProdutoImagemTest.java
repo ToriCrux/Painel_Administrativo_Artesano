@@ -1,6 +1,8 @@
 package com.sistema.admin.catalogo.produtoimagem.dominio;
 
-import com.sistema.admin.catalogo.produto.dominio.Produto;
+
+import com.sistema.catalogoservice.catalogo.produto.dominio.Produto;
+import com.sistema.catalogoservice.catalogo.produtoimagem.dominio.ProdutoImagem;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

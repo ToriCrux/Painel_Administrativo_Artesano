@@ -1,5 +1,6 @@
 package com.sistema.admin.mensageria;
 
+import com.sistema.catalogoservice.mensageria.RabbitMQConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.amqp.core.Binding;

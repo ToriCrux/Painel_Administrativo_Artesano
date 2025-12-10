@@ -2,6 +2,7 @@ package com.sistema.admin.catalogo.cor.api.dto;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
+import com.sistema.catalogoservice.catalogo.cor.api.dto.CorResponse;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

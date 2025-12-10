@@ -1,9 +1,10 @@
 package com.sistema.admin.catalogo.produtoimagem.aplicacao;
 
-import com.sistema.admin.catalogo.produto.dominio.Produto;
-import com.sistema.admin.catalogo.produto.infra.ProdutoRepository;
-import com.sistema.admin.catalogo.produtoimagem.dominio.ProdutoImagem;
-import com.sistema.admin.catalogo.produtoimagem.infra.ProdutoImagemRepository;
+import com.sistema.catalogoservice.catalogo.produto.dominio.Produto;
+import com.sistema.catalogoservice.catalogo.produto.infra.ProdutoRepository;
+import com.sistema.catalogoservice.catalogo.produtoimagem.aplicacao.ProdutoImagemService;
+import com.sistema.catalogoservice.catalogo.produtoimagem.dominio.ProdutoImagem;
+import com.sistema.catalogoservice.catalogo.produtoimagem.infra.ProdutoImagemRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

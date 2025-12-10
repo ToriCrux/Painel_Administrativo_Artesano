@@ -1,11 +1,13 @@
 package com.sistema.admin.catalogo.categoria.aplicacao;
 
-import com.sistema.admin.catalogo.categoria.api.dto.CategoriaRequest;
-import com.sistema.admin.catalogo.categoria.api.dto.CategoriaResponse;
-import com.sistema.admin.catalogo.categoria.dominio.Categoria;
-import com.sistema.admin.catalogo.categoria.infra.CategoriaRepository;
-import com.sistema.admin.config.exception.ConflictException;
-import com.sistema.admin.config.exception.NotFoundException;
+
+import com.sistema.catalogoservice.catalogo.categoria.api.dto.CategoriaRequest;
+import com.sistema.catalogoservice.catalogo.categoria.api.dto.CategoriaResponse;
+import com.sistema.catalogoservice.catalogo.categoria.aplicacao.CategoriaService;
+import com.sistema.catalogoservice.catalogo.categoria.dominio.Categoria;
+import com.sistema.catalogoservice.catalogo.categoria.infra.CategoriaRepository;
+import com.sistema.catalogoservice.config.exception.ConflictException;
+import com.sistema.catalogoservice.config.exception.NotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

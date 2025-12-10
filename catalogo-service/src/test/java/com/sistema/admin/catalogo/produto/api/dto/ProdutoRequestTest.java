@@ -1,5 +1,6 @@
 package com.sistema.admin.catalogo.produto.api.dto;
 
+import com.sistema.catalogoservice.catalogo.produto.api.dto.ProdutoRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;

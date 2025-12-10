@@ -1,5 +1,6 @@
 package com.sistema.admin.catalogo.cor.api.dto;
 
+import com.sistema.catalogoservice.catalogo.cor.api.dto.CorRequest;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;

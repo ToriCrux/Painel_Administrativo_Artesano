@@ -1,5 +1,6 @@
 package com.sistema.admin.catalogo.cor.dominio;
 
+import com.sistema.catalogoservice.catalogo.cor.dominio.Cor;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

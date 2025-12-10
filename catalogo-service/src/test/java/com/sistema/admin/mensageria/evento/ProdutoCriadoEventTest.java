@@ -1,5 +1,6 @@
 package com.sistema.admin.mensageria.evento;
 
+import com.sistema.catalogoservice.mensageria.evento.ProdutoCriadoEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

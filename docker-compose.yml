@@ -327,29 +327,49 @@ services:
       SERVER_PORT: "8082"
       SPRING_PROFILES_ACTIVE: docker
       SPRING_APPLICATION_NAME: CATALOGO-SERVICE
+
+      # Banco de Dados
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-catalogo:5432/${CATALOGO_DB_NAME:-catalogo_db}
       SPRING_DATASOURCE_USERNAME: ${CATALOGO_DB_USER:-catalogo_user}
       SPRING_DATASOURCE_PASSWORD: ${CATALOGO_DB_PASS:-catalogo_pass}
+
+      # ✅ Flyway (adição nova)
       SPRING_FLYWAY_URL: jdbc:postgresql://postgres-catalogo:5432/${CATALOGO_DB_NAME:-catalogo_db}
       SPRING_FLYWAY_USER: ${CATALOGO_DB_USER:-catalogo_user}
       SPRING_FLYWAY_PASSWORD: ${CATALOGO_DB_PASS:-catalogo_pass}
+      SPRING_FLYWAY_ENABLED: "true"
+      SPRING_FLYWAY_BASELINE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_VALIDATE_ON_MIGRATE: "true"
+      SPRING_FLYWAY_PLACEHOLDERS_LOG_LEVEL: "DEBUG"
+
+      # Eureka
       EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://registry:8761/eureka/
       EUREKA_INSTANCE_PREFER_IP_ADDRESS: "true"
+
+      # JWT
       AUTH_JWT_SECRET_BASE64: ${AUTH_JWT_SECRET_BASE64}
+
+      # JVM
       JAVA_OPTS: -Xms256m -Xmx384m
+
+      # RabbitMQ
       SPRING_RABBITMQ_HOST: rabbitmq
       SPRING_RABBITMQ_PORT: "5672"
       SPRING_RABBITMQ_USERNAME: guest
       SPRING_RABBITMQ_PASSWORD: guest
+
+      # Observabilidade
       MANAGEMENT_TRACING_SAMPLING_PROBABILITY: "1.0"
       MANAGEMENT_ZIPKIN_TRACING_ENDPOINT: http://zipkin:9411/api/v2/spans
-      MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: health,info,prometheus
+
+      # Logging
       LOGGING_FILE_NAME: /var/log/app/catalogo-service.log
       LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
     ports:
       - "8082:8082"
     volumes:
       - app_logs:/var/log/app
+      - ~/.m2:/root/.m2
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8082/actuator/health | grep -q '\"status\":\"UP\"' || exit 1"]
       interval: 10s
@@ -358,6 +378,7 @@ services:
       start_period: 20s
     restart: unless-stopped
     networks: [backend]
+
 
   estoque-service:
     build:
