@@ -6,10 +6,13 @@ import lombok.*;
 import java.math.BigDecimal;
 
 @Entity
-@Table(name = "tb_produto_proposta",
+@Table(
+        name = "tb_produto_proposta",
         indexes = {
-                @Index(name = "ix_produto_proposta_codigo", columnList = "codigoProduto")
-        })
+                @Index(name = "ix_produto_proposta_codigo", columnList = "codigo_produto"),
+                @Index(name = "ix_produto_proposta_proposta", columnList = "proposta_id")
+        }
+)
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor(access = AccessLevel.PRIVATE)
@@ -22,23 +25,26 @@ public class ProdutoProposta {
 
     @Setter
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "proposta_id", nullable = false,
-            foreignKey = @ForeignKey(name = "fk_produto_proposta_proposta"))
+    @JoinColumn(
+            name = "proposta_id",
+            nullable = false,
+            foreignKey = @ForeignKey(name = "fk_produto_proposta_proposta")
+    )
     private Proposta proposta;
 
-    @Column(nullable = false, length = 50)
+    @Column(name = "codigo_produto", nullable = false, length = 50)
     private String codigoProduto;
 
-    @Column(nullable = false, length = 150)
+    @Column(name = "nome_produto", nullable = false, length = 150)
     private String nomeProduto;
 
-    @Column(nullable = false)
+    @Column(name = "quantidade", nullable = false)
     private Integer quantidade;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(name = "preco_unitario", nullable = false, precision = 15, scale = 2)
     private BigDecimal precoUnitario;
 
-    @Column(nullable = false, precision = 15, scale = 2)
+    @Column(name = "subtotal", nullable = false, precision = 15, scale = 2)
     private BigDecimal subtotal;
 
     /**
@@ -52,4 +58,9 @@ public class ProdutoProposta {
         }
     }
 
+    @PrePersist
+    @PreUpdate
+    private void prePersistUpdate() {
+        calcularSubtotal();
+    }
 }

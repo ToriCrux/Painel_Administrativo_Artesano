@@ -7,9 +7,9 @@ import lombok.Data;
 @Data
 public class EstoqueRequest {
 
-    @NotNull
-    @Min(0)
+    @NotNull(message = "Quantidade é obrigatória")
+    @Min(value = 1, message = "Quantidade deve ser positiva")
+    private Long quantidade;
+
     private Long saldo;
-
-
 }

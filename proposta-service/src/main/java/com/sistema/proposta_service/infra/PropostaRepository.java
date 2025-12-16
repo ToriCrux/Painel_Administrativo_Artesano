@@ -18,4 +18,8 @@ public interface PropostaRepository extends JpaRepository<Proposta, Long> {
 
     @EntityGraph(attributePaths = {"cliente", "produtos"})
     Page<Proposta> findByNomeVendedorContainingIgnoreCase(String nomeVendedor, Pageable pageable);
+
+    // ✅ usado pelo listener AFTER_COMMIT
+    @EntityGraph(attributePaths = {"cliente", "produtos"})
+    Optional<Proposta> findWithClienteAndProdutosById(Long id);
 }

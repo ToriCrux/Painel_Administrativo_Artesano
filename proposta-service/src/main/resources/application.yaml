@@ -6,8 +6,6 @@ auth:
 spring:
   application:
     name: PROPOSTA-SERVICE
-  profiles:
-    active: dev
   security:
     oauth2:
       resourceserver:
@@ -31,3 +29,9 @@ eureka:
 
 server:
   port: 8084
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus

@@ -23,7 +23,9 @@ public class EstoqueController {
 
     private final EstoqueService estoqueService;
 
-
+    // ========================
+    // 🔹 Listagem
+    // ========================
     @GetMapping
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Page<EstoqueResponse>> listarEstoques(
@@ -37,7 +39,9 @@ public class EstoqueController {
         return ResponseEntity.ok(page);
     }
 
-
+    // ========================
+    // 🔹 Buscar estoque de um produto
+    // ========================
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<EstoqueResponse> buscarPorProduto(@PathVariable Long id) {
@@ -45,37 +49,53 @@ public class EstoqueController {
         return ResponseEntity.ok(toResponse(estoque));
     }
 
-
+    // ========================
+    // 🔹 Ajuste manual de saldo
+    // ========================
     @PutMapping("/{id}/movimentacoes/ajuste")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<EstoqueResponse> ajustarSaldo(
             @PathVariable Long id,
             @RequestBody @Valid EstoqueRequest request) {
+
+        if (request.getSaldo() == null)
+            return ResponseEntity.badRequest().build();
+
         var estoque = estoqueService.ajustarSaldo(id, request.getSaldo());
         return ResponseEntity.ok(toResponse(estoque));
     }
 
-
+    // ========================
+    // 🔹 Entrada de produtos
+    // ========================
     @PostMapping("/{id}/movimentacoes/entrada")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<EstoqueResponse> entrada(
             @PathVariable Long id,
             @RequestBody @Valid EstoqueRequest request) {
-        var estoque = estoqueService.aumentar(id, request.getSaldo());
+
+        var quantidade = request.getQuantidade();
+        var estoque = estoqueService.aumentar(id, quantidade);
         return ResponseEntity.ok(toResponse(estoque));
     }
 
-
+    // ========================
+    // 🔹 Saída de produtos
+    // ========================
     @PostMapping("/{id}/movimentacoes/saida")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<EstoqueResponse> saida(
             @PathVariable Long id,
             @RequestBody @Valid EstoqueRequest request) {
-        var estoque = estoqueService.baixar(id, request.getSaldo());
+
+        var quantidade = request.getQuantidade();
+        var estoque = estoqueService.baixar(id, quantidade);
         return ResponseEntity.ok(toResponse(estoque));
     }
 
-
+    // ========================
+    // 🔹 Listar movimentações
+    // ========================
     @GetMapping("/{id}/movimentacoes")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<MovimentacaoEstoque>> listarMovimentacoes(@PathVariable Long id) {
@@ -84,7 +104,9 @@ public class EstoqueController {
         return ResponseEntity.ok(movimentacoes);
     }
 
-
+    // ========================
+    // 🔹 Conversor de entidade → DTO
+    // ========================
     private EstoqueResponse toResponse(Estoque estoque) {
         return EstoqueResponse.builder()
                 .produtoId(estoque.getProdutoId())

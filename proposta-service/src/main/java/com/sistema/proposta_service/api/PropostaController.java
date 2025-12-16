@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -29,8 +30,7 @@ public class PropostaController {
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @GetMapping
     public ResponseEntity<Page<PropostaResponse>> listar(Pageable pageable) {
-        Page<PropostaResponse> page = service.listar(pageable)
-                .map(this::toResponse);
+        Page<PropostaResponse> page = service.listar(pageable).map(this::toResponse);
         return ResponseEntity.ok(page);
     }
 
@@ -46,11 +46,16 @@ public class PropostaController {
         return ResponseEntity.ok(toResponse(service.buscarPorCodigo(codigo)));
     }
 
+    // ✅ Pega o Authorization do request e repassa pro service
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PostMapping
-    public ResponseEntity<PropostaResponse> criar(@Valid @RequestBody PropostaRequest request) {
+    public ResponseEntity<PropostaResponse> criar(
+            @Valid @RequestBody PropostaRequest request,
+            @RequestHeader(name = HttpHeaders.AUTHORIZATION, required = false) String authorization
+    ) {
         Proposta proposta = toEntity(request);
-        return ResponseEntity.ok(toResponse(service.salvar(proposta)));
+        Proposta salva = service.salvar(proposta, authorization);
+        return ResponseEntity.ok(toResponse(salva));
     }
 
     @PreAuthorize("hasRole('ADMINISTRADOR')")
@@ -61,7 +66,7 @@ public class PropostaController {
     }
 
     // -------------------------------
-    // Conversões DTO ↔ Entidade
+    // Conversões DTO ↔ Entidade (Mantidas)
     // -------------------------------
 
     private PropostaResponse toResponse(Proposta proposta) {

@@ -33,22 +33,24 @@ public class Proposta {
     @Builder.Default
     private List<ProdutoProposta> produtos = new ArrayList<>();
 
-    @Column(nullable = false, unique = true, length = 50)
+    @Column(name="codigo", nullable = false, unique = true, length = 50)
     private String codigo;
 
-    @Column(nullable = false, length = 120)
+    @Column(name="nome_vendedor", nullable = false, length = 120)
     private String nomeVendedor;
 
-    @Column(nullable = false)
+    @Column(name="data_proposta", nullable = false)
     private LocalDate dataProposta;
 
-    @Column(nullable = false)
+    @Column(name="data_validade", nullable = false)
     private LocalDate dataValidade;
 
-    @Column(nullable = false, precision = 15, scale = 2)
-    private BigDecimal total;
+    @Column(name="total", nullable = false, precision = 15, scale = 2)
+    @Builder.Default
+    private BigDecimal total = BigDecimal.ZERO;
 
     public void adicionarProduto(ProdutoProposta produto) {
+        if (produto == null) return;
         produto.setProposta(this);
         produto.calcularSubtotal();
         this.produtos.add(produto);
@@ -62,7 +64,27 @@ public class Proposta {
 
     public void recalcularTotal() {
         this.total = produtos.stream()
-                .map(ProdutoProposta::getSubtotal)
+                .map(p -> p.getSubtotal() == null ? BigDecimal.ZERO : p.getSubtotal())
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Garante que todos os produtos apontem para esta proposta
+     */
+    public void amarrarProdutos() {
+        if (produtos == null) return;
+        for (ProdutoProposta p : produtos) {
+            if (p != null) {
+                p.setProposta(this);
+                p.calcularSubtotal();
+            }
+        }
+        recalcularTotal();
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void prePersistUpdate() {
+        amarrarProdutos();
     }
 }
