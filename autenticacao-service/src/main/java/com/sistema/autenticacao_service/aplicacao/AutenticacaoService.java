@@ -8,7 +8,6 @@ import com.sistema.autenticacao_service.config.exception.ConflictException;
 import com.sistema.autenticacao_service.config.jwt.JwtUtil;
 import com.sistema.autenticacao_service.dominio.Usuario;
 import com.sistema.autenticacao_service.infra.UsuarioRepository;
-import com.sistema.autenticacao_service.infra.mongo.UserLogService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -31,7 +30,6 @@ public class AutenticacaoService {
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-    private final UserLogService userLogService; // ✅ novo serviço para logs no MongoDB
 
     @Transactional(readOnly = true)
     public TokenResponse login(LoginResponse loginResponse) {
@@ -48,8 +46,6 @@ public class AutenticacaoService {
         UserDetails principal = toSpringUserDetails(usuario);
         String token = jwtUtil.generateToken(principal);
 
-        // ✅ registra log de login no MongoDB
-        userLogService.registrarAcao(usuario.getEmail(), "LOGIN");
 
         return new TokenResponse(token);
     }
@@ -71,9 +67,6 @@ public class AutenticacaoService {
         novo.setAtivo(Boolean.TRUE);
 
         Usuario salvo = usuarioRepository.save(novo);
-
-        // ✅ registra log de cadastro no MongoDB
-        userLogService.registrarAcao(salvo.getEmail(), "CADASTRO");
 
         return new UsuarioResponse(
                 salvo.getId(),

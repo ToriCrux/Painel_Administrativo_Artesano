@@ -2,6 +2,7 @@ package com.sistema.autenticacao_service.config.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpHeaders;
@@ -33,13 +34,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
 
-        final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+        String token = null;
+
+        // 1️⃣ Primeiro tenta pegar o token do cookie
+        if (request.getCookies() != null) {
+            for (Cookie cookie : request.getCookies()) {
+                if ("jwt".equals(cookie.getName())) {
+                    token = cookie.getValue();
+                    break;
+                }
+            }
+        }
+
+        // 2️⃣ Se não houver cookie, tenta header Authorization
+        if (token == null) {
+            final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+            if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                token = authHeader.substring(7).trim();
+            }
+        }
+
+        if (token == null) {
             filterChain.doFilter(request, response);
             return;
         }
-
-        final String token = authHeader.substring(7).trim();
 
         try {
             if (jwtUtil.isExpired(token)) {
@@ -54,7 +72,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             if (SecurityContextHolder.getContext().getAuthentication() == null) {
-                List<String> roles = jwtUtil.getRoles(token); // ex.: ["ROLE_USER","ROLE_ADMIN"]
+                List<String> roles = jwtUtil.getRoles(token);
 
                 var authorities = roles.stream()
                         .map(SimpleGrantedAuthority::new)
@@ -67,9 +85,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
                 SecurityContextHolder.getContext().setAuthentication(authToken);
             }
-        } catch (Exception ignored) {
-
-        }
+        } catch (Exception ignored) { }
 
         filterChain.doFilter(request, response);
     }
@@ -77,7 +93,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     @Override
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String p = request.getServletPath();
-        return p.startsWith("/api/auth/")
+        return p.startsWith("/api/v1/auth/")
                 || p.startsWith("/swagger-ui")
                 || p.equals("/swagger-ui.html")
                 || p.startsWith("/v3/api-docs")

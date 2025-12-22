@@ -14,10 +14,16 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:3000")
+                        // ✅ permite o front-end local do Next.js
+                        .allowedOriginPatterns("http://localhost:3000")
+                        // ✅ métodos HTTP permitidos
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
+                        // ✅ cabeçalhos customizados (ex: Authorization, Content-Type)
                         .allowedHeaders("*")
-                        .allowCredentials(true);
+                        // ✅ necessário para envio de cookies JWT
+                        .allowCredentials(true)
+                        // ✅ evita cache de preflight (opcional, útil no dev)
+                        .maxAge(3600);
             }
         };
     }

@@ -6,13 +6,16 @@ import com.sistema.autenticacao_service.api.dto.TokenResponse;
 import com.sistema.autenticacao_service.api.dto.UsuarioResponse;
 import com.sistema.autenticacao_service.aplicacao.AutenticacaoService;
 import com.sistema.autenticacao_service.dominio.Usuario;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collection;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -38,9 +41,35 @@ public class AutenticacaoController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<TokenResponse> login(@RequestBody @Valid LoginResponse loginResposta) {
-        TokenResponse token = autenticacaoService.login(loginResposta);
-        return ResponseEntity.ok(token);
+    public ResponseEntity<?> login(@RequestBody @Valid LoginResponse loginRequest, HttpServletResponse response) {
+        TokenResponse tokenResponse = autenticacaoService.login(loginRequest);
+        String jwtToken = tokenResponse.getToken();
+
+        // Cria cookie seguro
+        ResponseCookie cookie = ResponseCookie.from("jwt", jwtToken)
+                .httpOnly(true)
+                .secure(false) // altere para true em produção (HTTPS)
+                .sameSite("None") // use "None" se o frontend estiver em domínio diferente
+                .path("/")
+                .maxAge(3600)
+                .build();
+
+        response.addHeader("Set-Cookie", cookie.toString());
+
+        return ResponseEntity.ok(Map.of("message", "Login realizado com sucesso"));
     }
 
+    @PostMapping("/logout")
+    public ResponseEntity<?> logout(HttpServletResponse response) {
+        ResponseCookie cookie = ResponseCookie.from("jwt", "")
+                .httpOnly(true)
+                .secure(false)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
+
+        response.addHeader("Set-Cookie", cookie.toString());
+        return ResponseEntity.ok(Map.of("message", "Logout realizado com sucesso"));
+    }
 }
