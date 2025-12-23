@@ -2,7 +2,6 @@ package com.sistema.autenticacao_service.api;
 
 import com.sistema.autenticacao_service.api.dto.LoginResponse;
 import com.sistema.autenticacao_service.api.dto.RegistroResponse;
-import com.sistema.autenticacao_service.api.dto.TokenResponse;
 import com.sistema.autenticacao_service.api.dto.UsuarioResponse;
 import com.sistema.autenticacao_service.aplicacao.AutenticacaoService;
 import com.sistema.autenticacao_service.dominio.Usuario;
@@ -42,25 +41,29 @@ public class AutenticacaoController {
 
     @PostMapping("/login")
     public ResponseEntity<?> login(@RequestBody @Valid LoginResponse loginRequest, HttpServletResponse response) {
-        TokenResponse tokenResponse = autenticacaoService.login(loginRequest);
-        String jwtToken = tokenResponse.getToken();
+        // 🔹 Gera o JWT normalmente
+        String jwtToken = autenticacaoService.login(loginRequest).getToken();
 
-        // Cria cookie seguro
+        // 🔹 Cria o cookie seguro (somente acessível pelo navegador)
         ResponseCookie cookie = ResponseCookie.from("jwt", jwtToken)
                 .httpOnly(true)
                 .secure(false) // altere para true em produção (HTTPS)
-                .sameSite("None") // use "None" se o frontend estiver em domínio diferente
+                .sameSite("Lax") // "Lax" para localhost; "None" para HTTPS cross-domain
                 .path("/")
                 .maxAge(3600)
                 .build();
 
         response.addHeader("Set-Cookie", cookie.toString());
 
-        return ResponseEntity.ok(Map.of("message", "Login realizado com sucesso"));
+        // ✅ Retorna apenas mensagem — o token fica no cookie
+        return ResponseEntity.ok(Map.of(
+                "message", "Login realizado com sucesso"
+        ));
     }
 
     @PostMapping("/logout")
     public ResponseEntity<?> logout(HttpServletResponse response) {
+        // 🔹 Remove o cookie
         ResponseCookie cookie = ResponseCookie.from("jwt", "")
                 .httpOnly(true)
                 .secure(false)

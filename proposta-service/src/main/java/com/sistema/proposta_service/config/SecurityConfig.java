@@ -1,5 +1,6 @@
 package com.sistema.proposta_service.config;
 
+import com.sistema.proposta_service.config.jwt.JwtCookieAuthenticationFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -13,6 +14,7 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -23,8 +25,14 @@ import java.util.Base64;
 import java.util.List;
 
 @Configuration
-@EnableMethodSecurity // habilita @PreAuthorize nos controllers
+@EnableMethodSecurity
 public class SecurityConfig {
+
+	private final JwtCookieAuthenticationFilter jwtCookieAuthenticationFilter;
+
+	public SecurityConfig(JwtCookieAuthenticationFilter jwtCookieAuthenticationFilter) {
+		this.jwtCookieAuthenticationFilter = jwtCookieAuthenticationFilter;
+	}
 
 	@Bean
 	public JwtDecoder jwtDecoder(@Value("${auth.jwt.secret}") String base64Secret) {
@@ -36,8 +44,8 @@ public class SecurityConfig {
 	@Bean
 	public JwtAuthenticationConverter jwtAuthenticationConverter() {
 		JwtGrantedAuthoritiesConverter gac = new JwtGrantedAuthoritiesConverter();
-		gac.setAuthoritiesClaimName("roles"); // vem do JwtUtil.generateToken()
-		gac.setAuthorityPrefix("");           // já vem com "ROLE_..."
+		gac.setAuthoritiesClaimName("roles");
+		gac.setAuthorityPrefix(""); // já vem com ROLE_
 
 		JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
 		converter.setJwtGrantedAuthoritiesConverter(gac);
@@ -47,10 +55,11 @@ public class SecurityConfig {
 	@Bean
 	CorsConfigurationSource corsConfigurationSource() {
 		CorsConfiguration configuration = new CorsConfiguration();
-		configuration.setAllowedOrigins(List.of("http://localhost:3000")); // origem do seu front
+		configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:3001"));
 		configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
 		configuration.setAllowedHeaders(List.of("*"));
 		configuration.setAllowCredentials(true);
+		configuration.setMaxAge(3600L);
 
 		UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
 		source.registerCorsConfiguration("/**", configuration);
@@ -58,38 +67,33 @@ public class SecurityConfig {
 	}
 
 	@Bean
-	public SecurityFilterChain securityFilterChain(
-			HttpSecurity http,
-			JwtAuthenticationConverter jwtAuthenticationConverter
-	) throws Exception {
+	public SecurityFilterChain securityFilterChain(HttpSecurity http,
+												   JwtAuthenticationConverter jwtAuthenticationConverter) throws Exception {
 
 		http
-			.cors(cors -> cors.configurationSource(corsConfigurationSource()))
-			.csrf(AbstractHttpConfigurer::disable)
-			.sessionManagement(sm ->
-					sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
-			)
-			.authorizeHttpRequests(auth -> auth
-					.requestMatchers(
-							"/v3/api-docs/**",
-							"/swagger-ui/**",
-							"/swagger-ui.html"
-					).permitAll()
-					.requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/prometheus").permitAll()
-					.anyRequest().authenticated()
-			)
-			// Resource Server com JWT
-			.oauth2ResourceServer(oauth2 -> oauth2
-					.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
-			)
-			// Resposta 401 “seca” quando não autenticado
-			.exceptionHandling(ex -> ex
-					.authenticationEntryPoint((req, res, e) ->
-							res.sendError(HttpServletResponse.SC_UNAUTHORIZED))
-			)
-			// Sem formulário de login / httpBasic
-			.httpBasic(AbstractHttpConfigurer::disable)
-			.formLogin(AbstractHttpConfigurer::disable);
+				.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+				.csrf(AbstractHttpConfigurer::disable)
+				.sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+				.authorizeHttpRequests(auth -> auth
+						.requestMatchers(
+								"/v3/api-docs/**",
+								"/swagger-ui/**",
+								"/swagger-ui.html",
+								"/actuator/health",
+								"/actuator/prometheus"
+						).permitAll()
+						.anyRequest().authenticated()
+				)
+				.oauth2ResourceServer(oauth2 ->
+						oauth2.jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthenticationConverter))
+				)
+				.exceptionHandling(ex -> ex
+						.authenticationEntryPoint((req, res, e) ->
+								res.sendError(HttpServletResponse.SC_UNAUTHORIZED))
+				);
+
+		// 🔹 adiciona o filtro antes da autenticação JWT
+		http.addFilterBefore(jwtCookieAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 		return http.build();
 	}

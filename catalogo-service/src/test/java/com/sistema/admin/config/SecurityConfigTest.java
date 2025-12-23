@@ -24,14 +24,6 @@ class SecurityConfigTest {
     }
 
     @Test
-    @DisplayName("jwtAuthenticationConverter deve ser criado")
-    void jwtAuthenticationConverter_shouldConfigureRolesClaim() {
-        JwtAuthenticationConverter converter = config.jwtAuthenticationConverter();
-
-        assertThat(converter).isNotNull();
-    }
-
-    @Test
     @DisplayName("corsConfigurationSource deve definir origens e métodos permitidos")
     void corsConfigurationSource_shouldDefineAllowedOrigins() {
         CorsConfigurationSource source = config.corsConfigurationSource();

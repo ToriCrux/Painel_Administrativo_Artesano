@@ -7,6 +7,7 @@ import com.sistema.pedido_service.infra.catalogo.CatalogoFeignClient;
 import com.sistema.pedido_service.infra.mensageria.PropostaCriadaEvent;
 import com.sistema.pedido_service.infra.mensageria.evento.PedidoFinalizadoEvent;
 import com.sistema.pedido_service.infra.mensageria.evento.PedidoProducer;
+import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -32,33 +33,35 @@ public class PedidoService {
 
     /**
      * Cria pedidos automaticamente com base em um evento de proposta criada.
+     * Agora NÃO depende mais do Authorization vindo no Rabbit.
+     * O Feign injeta o Bearer automaticamente (SecurityContext ou auth.service.token).
      */
     @Transactional
-    public void criarPedido(PropostaCriadaEvent evento, String authorization) {
+    public void criarPedido(PropostaCriadaEvent evento) {
         if (evento == null) return;
         if (evento.produtos() == null || evento.produtos().isEmpty()) {
             log.warn("Evento de proposta {} não possui produtos. Ignorando.", evento.codigoProposta());
             return;
         }
 
-        if (authorization == null || authorization.isBlank()) {
-            throw new IllegalStateException("Authorization Bearer Token ausente no evento RabbitMQ. Não é possível consultar o Catálogo.");
-        }
-
         log.info("🛠 Criando pedidos para proposta={} com {} produtos.",
                 evento.codigoProposta(), evento.produtos().size());
 
-        // 🔁 Obtém a lista de produtos do Catálogo (página 0)
         Map<String, Object> response;
         try {
-            response = catalogoClient.listarProdutos(authorization);
+            response = catalogoClient.listarProdutos(0, 100);
+        } catch (FeignException.Unauthorized e) {
+            log.error("❌ Catálogo retornou 401 (Unauthorized). " +
+                    "Causas comuns: AUTH_JWT_SECRET_BASE64 diferente entre serviços OU auth.service.token inválido/sem ROLE.");
+            throw new IllegalStateException("401 ao consultar Catálogo. Verifique SECRET e/ou auth.service.token", e);
         } catch (Exception e) {
             log.error("❌ Erro ao consultar o Catálogo Service: {}", e.getMessage());
             throw new IllegalStateException("Falha ao consultar Catálogo Service via FeignClient", e);
         }
 
-        // Extrai o array "content" da resposta (padrão de paginação Spring)
+        @SuppressWarnings("unchecked")
         List<Map<String, Object>> produtosCatalogo = (List<Map<String, Object>>) response.get("content");
+
         if (produtosCatalogo == null || produtosCatalogo.isEmpty()) {
             log.warn("Nenhum produto retornado do Catálogo. Verifique se há produtos cadastrados.");
             return;
@@ -67,7 +70,6 @@ public class PedidoService {
         for (var prod : evento.produtos()) {
             String codigoProduto = prod.codigoProduto();
 
-            // 🔍 Busca o produto no catálogo com base no código
             Optional<Map<String, Object>> produtoEncontradoOpt = produtosCatalogo.stream()
                     .filter(p -> codigoProduto.equalsIgnoreCase((String) p.get("codigo")))
                     .findFirst();
@@ -80,17 +82,14 @@ public class PedidoService {
             Map<String, Object> produtoEncontrado = produtoEncontradoOpt.get();
             Long produtoId = ((Number) produtoEncontrado.get("id")).longValue();
 
-            // Evita duplicidade de pedidos
             if (repository.existsByCodigoAndProdutoId(evento.codigoProposta(), produtoId)) {
                 log.info("Pedido já existe para proposta={} produtoId={}. Ignorando duplicado.",
                         evento.codigoProposta(), produtoId);
                 continue;
             }
 
-            // Calcula total
             BigDecimal total = prod.precoUnitario().multiply(BigDecimal.valueOf(prod.quantidade()));
 
-            // Cria e persiste o pedido
             Pedido pedido = Pedido.builder()
                     .codigo(evento.codigoProposta())
                     .produtoId(produtoId)
@@ -111,9 +110,6 @@ public class PedidoService {
         log.info("🏁 Processamento da proposta {} concluído.", evento.codigoProposta());
     }
 
-    /**
-     * Atualiza o status de um pedido e publica evento se for FINALIZADO.
-     */
     @Transactional
     public void atualizarStatus(Long id, String novoStatus) {
         Pedido pedido = repository.findById(id)

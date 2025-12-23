@@ -22,14 +22,19 @@ public class BearerTokenProvider {
         if (auth instanceof JwtAuthenticationToken jwtAuth) {
             String tokenValue = jwtAuth.getToken().getTokenValue();
             if (StringUtils.hasText(tokenValue)) {
-                return "Bearer " + tokenValue; // Adicione o prefixo "Bearer "
+                return ensureBearerPrefix(tokenValue);
             }
         }
 
         if (StringUtils.hasText(serviceJwt)) {
-            return "Bearer " + serviceJwt; // Adicione o prefixo "Bearer "
+            return ensureBearerPrefix(serviceJwt);
         }
 
         return null;
+    }
+
+    private String ensureBearerPrefix(String token) {
+        String t = token.trim();
+        return t.toLowerCase().startsWith("bearer ") ? t : "Bearer " + t;
     }
 }

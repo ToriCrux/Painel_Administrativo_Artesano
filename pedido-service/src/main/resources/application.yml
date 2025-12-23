@@ -9,7 +9,6 @@ spring:
     url: jdbc:postgresql://postgres-pedido:5432/pedido_db
     username: pedido_user
     password: pedido_pass
-    # Não precisa de driver-class-name aqui, o Spring Boot detecta automaticamente
 
   rabbitmq:
     host: rabbitmq
@@ -45,7 +44,6 @@ eureka:
 
 services:
   catalogo:
-    # CORREÇÃO CRÍTICA: Removida a porta (8082). Agora usa apenas o nome do serviço.
     base-url: http://catalogo-service
 
 mensageria:
@@ -54,4 +52,8 @@ mensageria:
 
 auth:
   jwt:
-    secret: ${JWT_SECRET_B64}
+    secret: ${AUTH_JWT_SECRET_BASE64:kKm5G2MIj9aMOK/y6v0tXpLHmv8nciqTmrLb+HlJk3k=}
+    expiration: 28800
+  service:
+    token: ${AUTH_SERVICE_TOKEN:}
+
