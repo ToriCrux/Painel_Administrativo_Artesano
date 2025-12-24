@@ -2,7 +2,6 @@ package com.sistema.estoque_service.dominio;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.OffsetDateTime;
 
 @Entity
@@ -24,8 +23,14 @@ public class Estoque {
     @Column(name = "produto_id", nullable = false)
     private Long produtoId;
 
+    @Column(name = "produto_codigo", nullable = false)
+    private String produtoCodigo = "—";
+
+    @Column(name = "produto_nome", nullable = false)
+    private String produtoNome = "(Produto removido)";
+
     @Column(name = "saldo", nullable = false)
-    private long saldo;
+    private long saldo = 0L;
 
     @Version
     private long versao;
@@ -35,6 +40,9 @@ public class Estoque {
 
     @Column(nullable = false)
     private OffsetDateTime atualizadoEm;
+
+    @Column(name = "ativo", nullable = false)
+    private boolean ativo = true; // 🔹 true = produto ativo, false = produto removido/excluído
 
     @PrePersist
     public void prePersist() {
@@ -66,6 +74,12 @@ public class Estoque {
             throw new IllegalArgumentException("Saldo não pode ser negativo");
         }
         this.saldo = novoSaldo;
+    }
+
+    public void marcarComoExcluido() {
+        this.ativo = false;
+        this.produtoNome = "(Produto removido)";
+        this.produtoCodigo = "—";
     }
 
     private void validarQuantidade(long qtd) {

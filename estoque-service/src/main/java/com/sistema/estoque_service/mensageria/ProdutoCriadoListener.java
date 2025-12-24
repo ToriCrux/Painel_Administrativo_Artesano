@@ -16,12 +16,21 @@ public class ProdutoCriadoListener {
 
 	@RabbitListener(queues = RabbitMQConfig.PRODUTO_CRIADO_QUEUE)
 	public void onProdutoCriado(ProdutoCriadoEvent event) {
-
-		log.info("Recebido ProdutoCriadoEvent para produtoId={}, codigo={}, nome={}",
+		log.info("📦 Recebido ProdutoCriadoEvent → produtoId={}, código={}, nome={}",
 				event.produtoId(), event.codigo(), event.nome());
 
-		estoqueService.criarEstoqueParaProduto(event.produtoId());
+		try {
+			// ✅ Agora o estoque é criado com nome e código do produto
+			estoqueService.criarEstoqueParaProduto(
+					event.produtoId(),
+					event.nome(),
+					event.codigo()
+			);
 
-		log.info("Estoque criado para produtoId={}", event.produtoId());
+			log.info("✅ Estoque criado com sucesso para produtoId={}", event.produtoId());
+
+		} catch (Exception e) {
+			log.error("❌ Erro ao criar estoque para produtoId={}: {}", event.produtoId(), e.getMessage(), e);
+		}
 	}
 }

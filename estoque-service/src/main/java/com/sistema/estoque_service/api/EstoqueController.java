@@ -105,14 +105,61 @@ public class EstoqueController {
     }
 
     // ========================
+    // 🔹 Deletar estoque por produto
+    // ========================
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<Void> deletarEstoque(@PathVariable Long id) {
+        estoqueService.deletarPorProduto(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ========================
+    // 🔹 Criar estoque zerado (manual/inicial)
+    // ========================
+    @PostMapping("/{produtoId}/criar")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<EstoqueResponse> criarEstoqueZerado(@PathVariable Long produtoId) {
+        try {
+            var estoque = estoqueService.criarEstoqueZeradoSeNaoExistir(produtoId);
+            return ResponseEntity.ok(toResponse(estoque));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.status(409).build(); // já existe
+        } catch (Exception e) {
+            return ResponseEntity.internalServerError().build();
+        }
+    }
+
+    // ========================
+    // 🔹 Marcar produto como excluído (novo)
+    // ========================
+    @PutMapping("/{produtoId}/excluir")
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
+    public ResponseEntity<Void> marcarProdutoComoExcluido(@PathVariable Long produtoId) {
+        estoqueService.marcarProdutoComoExcluido(produtoId);
+        return ResponseEntity.noContent().build();
+    }
+
+    // ========================
     // 🔹 Conversor de entidade → DTO
     // ========================
     private EstoqueResponse toResponse(Estoque estoque) {
         return EstoqueResponse.builder()
                 .produtoId(estoque.getProdutoId())
+                .produtoCodigo(
+                        estoque.getProdutoCodigo() != null && !estoque.getProdutoCodigo().isBlank()
+                                ? estoque.getProdutoCodigo()
+                                : "—"
+                )
+                .produtoNome(
+                        estoque.getProdutoNome() != null && !estoque.getProdutoNome().isBlank()
+                                ? estoque.getProdutoNome()
+                                : "(Produto removido)"
+                )
                 .saldo(estoque.getSaldo())
                 .versao(estoque.getVersao())
                 .atualizadoEm(estoque.getAtualizadoEm())
+                .ativo(estoque.isAtivo()) // ✅ novo campo incluído
                 .build();
     }
 }

@@ -40,6 +40,8 @@ class EstoqueServiceTest {
         return Estoque.builder()
                 .id(id)
                 .produtoId(produtoId)
+                .produtoCodigo("COD-" + produtoId)
+                .produtoNome("Produto " + produtoId)
                 .saldo(saldo)
                 .build();
     }
@@ -81,6 +83,8 @@ class EstoqueServiceTest {
 
         assertThat(e.getProdutoId()).isEqualTo(10L);
         assertThat(e.getSaldo()).isEqualTo(7L);
+        assertThat(e.getProdutoCodigo()).isEqualTo("COD-10");
+        assertThat(e.getProdutoNome()).isEqualTo("Produto 10");
     }
 
     @Test
@@ -111,7 +115,7 @@ class EstoqueServiceTest {
 
         assertThat(mov.getProdutoId()).isEqualTo(10L);
         assertThat(mov.getTipo()).isEqualTo("AJUSTE");
-        assertThat(mov.getQuantidade()).isEqualTo(12L - 5L);
+        assertThat(mov.getQuantidade()).isEqualTo(7L);
         assertThat(mov.getSaldoAnterior()).isEqualTo(5L);
         assertThat(mov.getSaldoNovo()).isEqualTo(12L);
     }
@@ -168,11 +172,10 @@ class EstoqueServiceTest {
     }
 
     @Test
-    @DisplayName("criarEstoqueParaProduto: deve criar com saldo 0 e registrar movimentação CRIACAO")
+    @DisplayName("criarEstoqueParaProduto: deve criar com saldo 0, nome/código padrão e registrar movimentação CRIACAO")
     void criarEstoqueParaProduto_ok() {
         when(repository.save(any(Estoque.class))).thenAnswer(inv -> {
             Estoque e = inv.getArgument(0);
-            // simula id gerado para não ficar null em logs/testes
             return e.toBuilder().id(1L).build();
         });
 
@@ -180,8 +183,12 @@ class EstoqueServiceTest {
 
         ArgumentCaptor<Estoque> estoqueCaptor = ArgumentCaptor.forClass(Estoque.class);
         verify(repository).save(estoqueCaptor.capture());
-        assertThat(estoqueCaptor.getValue().getProdutoId()).isEqualTo(99L);
-        assertThat(estoqueCaptor.getValue().getSaldo()).isEqualTo(0L);
+        Estoque e = estoqueCaptor.getValue();
+
+        assertThat(e.getProdutoId()).isEqualTo(99L);
+        assertThat(e.getSaldo()).isEqualTo(0L);
+        assertThat(e.getProdutoNome()).isEqualTo("Desconhecido");
+        assertThat(e.getProdutoCodigo()).isEqualTo("—");
 
         ArgumentCaptor<MovimentacaoEstoque> movCaptor = ArgumentCaptor.forClass(MovimentacaoEstoque.class);
         verify(movRepository).save(movCaptor.capture());
@@ -216,7 +223,14 @@ class EstoqueServiceTest {
     @DisplayName("listarMovimentacoes: deve delegar para repository")
     void listarMovimentacoes_ok() {
         when(movRepository.findByProdutoIdOrderByCriadoEmDesc(10L))
-                .thenReturn(List.of(MovimentacaoEstoque.builder().id(1L).produtoId(10L).tipo("ENTRADA").quantidade(1L).saldoAnterior(0L).saldoNovo(1L).build()));
+                .thenReturn(List.of(MovimentacaoEstoque.builder()
+                        .id(1L)
+                        .produtoId(10L)
+                        .tipo("ENTRADA")
+                        .quantidade(1L)
+                        .saldoAnterior(0L)
+                        .saldoNovo(1L)
+                        .build()));
 
         var list = service.listarMovimentacoes(10L);
 

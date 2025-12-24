@@ -19,19 +19,27 @@ public class EstoqueService {
     private final EstoqueRepository repository;
     private final MovimentacaoEstoqueRepository movRepository;
 
-
+    // ========================
+    // 🔹 Listagem
+    // ========================
     public Page<Estoque> listar(Long produtoId, Pageable pageable) {
         return (produtoId != null)
                 ? repository.findByProdutoId(produtoId, pageable)
                 : repository.findAll(pageable);
     }
 
-
+    // ========================
+    // 🔹 Buscar estoque de produto
+    // ========================
     public Estoque buscarPorProduto(Long produtoId) {
         return repository.findByProdutoId(produtoId)
-                .orElseThrow(() -> new EntityNotFoundException("Estoque não encontrado para produto " + produtoId));
+                .orElseThrow(() ->
+                        new EntityNotFoundException("Estoque não encontrado para produto " + produtoId));
     }
 
+    // ========================
+    // 🔹 Ajustar saldo
+    // ========================
     public Estoque ajustarSaldo(Long produtoId, Long novoSaldo) {
         var estoque = buscarPorProduto(produtoId);
         Long saldoAnterior = estoque.getSaldo();
@@ -39,11 +47,15 @@ public class EstoqueService {
         estoque.ajustar(novoSaldo);
         var salvo = repository.save(estoque);
 
-        registrarMovimentacao(produtoId, "AJUSTE", novoSaldo - saldoAnterior, saldoAnterior, salvo.getSaldo());
+        registrarMovimentacao(produtoId, "AJUSTE",
+                novoSaldo - saldoAnterior, saldoAnterior, salvo.getSaldo());
 
         return salvo;
     }
 
+    // ========================
+    // 🔹 Entrada
+    // ========================
     public Estoque aumentar(Long produtoId, Long qtd) {
         var e = buscarPorProduto(produtoId);
         Long saldoAnterior = e.getSaldo();
@@ -52,10 +64,12 @@ public class EstoqueService {
         var salvo = repository.save(e);
 
         registrarMovimentacao(produtoId, "ENTRADA", qtd, saldoAnterior, salvo.getSaldo());
-
         return salvo;
     }
 
+    // ========================
+    // 🔹 Saída
+    // ========================
     public Estoque baixar(Long produtoId, Long qtd) {
         var e = buscarPorProduto(produtoId);
         Long saldoAnterior = e.getSaldo();
@@ -64,31 +78,82 @@ public class EstoqueService {
         var salvo = repository.save(e);
 
         registrarMovimentacao(produtoId, "SAIDA", qtd, saldoAnterior, salvo.getSaldo());
-
         return salvo;
     }
 
-    public Estoque criarEstoqueParaProduto(Long produtoId) {
+    // ========================
+    // 🔹 Criar estoque (com nome/código)
+    // ========================
+    public Estoque criarEstoqueParaProduto(Long produtoId, String produtoNome, String produtoCodigo) {
         var e = Estoque.builder()
                 .produtoId(produtoId)
+                .produtoNome(produtoNome != null ? produtoNome : "(Produto removido)")
+                .produtoCodigo(produtoCodigo != null ? produtoCodigo : "—")
                 .saldo(0L)
+                .ativo(true)
                 .build();
 
         var salvo = repository.save(e);
-
         registrarMovimentacao(produtoId, "CRIACAO", 0L, 0L, salvo.getSaldo());
-
         return salvo;
     }
 
+    // ========================
+    // 🔹 Criar estoque (retrocompatível)
+    // ========================
+    public Estoque criarEstoqueParaProduto(Long produtoId) {
+        return criarEstoqueParaProduto(produtoId, "Desconhecido", "—");
+    }
+
+    // ========================
+    // 🔹 Criar estoque zerado se não existir
+    // ========================
+    public Estoque criarEstoqueZeradoSeNaoExistir(Long produtoId) {
+        var existente = repository.findByProdutoId(produtoId);
+        if (existente.isPresent()) {
+            throw new IllegalStateException("Estoque já existe para este produto.");
+        }
+
+        var novo = Estoque.builder()
+                .produtoId(produtoId)
+                .produtoCodigo("—")
+                .produtoNome("(Produto removido)")
+                .saldo(0L)
+                .ativo(true)
+                .build();
+
+        var salvo = repository.save(novo);
+        registrarMovimentacao(produtoId, "CRIACAO", 0L, 0L, salvo.getSaldo());
+        return salvo;
+    }
+
+    // ========================
+    // 🔹 Marcar produto como excluído
+    // ========================
+    public void marcarProdutoComoExcluido(Long produtoId) {
+        repository.findByProdutoId(produtoId).ifPresent(estoque -> {
+            estoque.marcarComoExcluido();
+            repository.save(estoque);
+        });
+    }
+
+    // ========================
+    // 🔹 Deletar estoque por produto
+    // ========================
     public void deletarPorProduto(Long produtoId) {
         repository.findByProdutoId(produtoId).ifPresent(repository::delete);
     }
 
+    // ========================
+    // 🔹 Listar movimentações
+    // ========================
     public List<MovimentacaoEstoque> listarMovimentacoes(Long produtoId) {
         return movRepository.findByProdutoIdOrderByCriadoEmDesc(produtoId);
     }
 
+    // ========================
+    // 🔹 Registrar movimentação
+    // ========================
     private void registrarMovimentacao(Long produtoId, String tipo, Long quantidade,
                                        Long saldoAnterior, Long saldoNovo) {
         MovimentacaoEstoque mov = MovimentacaoEstoque.builder()
