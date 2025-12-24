@@ -166,4 +166,33 @@ public class EstoqueService {
 
         movRepository.save(mov);
     }
+
+    // ========================
+// 🔹 Registrar saída por pedido (tipo CLIENTE)
+// ========================
+    public void registrarSaidaPorPedido(Long produtoId, Long qtd, String codigoPedido, String nomeCliente) {
+        var e = buscarPorProduto(produtoId);
+        Long saldoAnterior = e.getSaldo();
+
+        e.baixar(qtd);
+        var salvo = repository.save(e);
+
+        String descricao = String.format("Baixa automática — Pedido %s (Cliente: %s)", codigoPedido, nomeCliente);
+
+        registrarMovimentacaoComDescricao(produtoId, "CLIENTE", qtd, saldoAnterior, salvo.getSaldo(), descricao);
+    }
+
+    private void registrarMovimentacaoComDescricao(Long produtoId, String tipo, Long quantidade,
+                                                   Long saldoAnterior, Long saldoNovo, String descricao) {
+        MovimentacaoEstoque mov = MovimentacaoEstoque.builder()
+                .produtoId(produtoId)
+                .tipo(tipo)
+                .quantidade(quantidade)
+                .saldoAnterior(saldoAnterior)
+                .saldoNovo(saldoNovo)
+                .descricao(descricao)
+                .build();
+
+        movRepository.save(mov);
+    }
 }

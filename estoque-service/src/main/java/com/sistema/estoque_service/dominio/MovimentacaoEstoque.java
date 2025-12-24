@@ -18,6 +18,10 @@ public class MovimentacaoEstoque {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Column(nullable = true, length = 255)
+    private String descricao;
+
+
     @Column(nullable = false)
     private Long produtoId;
 

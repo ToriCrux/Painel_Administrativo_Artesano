@@ -16,11 +16,19 @@ public class PedidoFinalizadoListener {
 
     @RabbitListener(queues = RabbitMQConfig.PEDIDO_FINALIZADO_QUEUE)
     public void onPedidoFinalizado(PedidoFinalizadoEvent event) {
-        log.info("📦 Recebido PedidoFinalizadoEvent: produtoId={} qtd={}",
-                event.produtoId(), event.quantidade());
+        log.info("📦 Recebido PedidoFinalizadoEvent: codigo={} produtoId={} qtd={}",
+                event.codigo(), event.produtoId(), event.quantidade());
+
         try {
-            estoqueService.baixar(event.produtoId(), event.quantidade().longValue());
-            log.info("✅ Estoque atualizado com sucesso para produtoId={}", event.produtoId());
+            estoqueService.registrarSaidaPorPedido(
+                    event.produtoId(),
+                    event.quantidade().longValue(),
+                    event.codigo(),
+                    event.nomeCliente()
+            );
+
+            log.info("✅ Estoque atualizado com sucesso para produtoId={} (Pedido: {})",
+                    event.produtoId(), event.codigo());
         } catch (Exception e) {
             log.error("❌ Erro ao baixar estoque para produtoId={}: {}", event.produtoId(), e.getMessage());
         }
