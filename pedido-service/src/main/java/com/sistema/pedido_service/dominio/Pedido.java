@@ -5,17 +5,11 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
-@Table(
-        name = "tb_pedido",
-        uniqueConstraints = {
-                @UniqueConstraint(
-                        name = "uq_pedido_codigo_produto",
-                        columnNames = {"codigo", "produto_id"}
-                )
-        }
-)
+@Table(name = "tb_pedido")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -27,24 +21,15 @@ public class Pedido {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    // ❌ não pode ser UNIQUE se uma proposta tiver mais de um item
     @Column(nullable = false, length = 50)
     private String codigo;
-
-    @Column(name = "produto_id", nullable = false)
-    private Long produtoId;
 
     @Column(nullable = false, length = 120)
     private String nomeCliente;
 
-    @Column(nullable = false, length = 150)
-    private String produto;
-
-    @Column(nullable = false)
-    private Integer quantidade;
-
-    @Column(nullable = false, precision = 15, scale = 2)
-    private BigDecimal precoUnitario;
+    @Builder.Default
+    @OneToMany(mappedBy = "pedido", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<ItemPedido> itens = new ArrayList<>();
 
     @Column(nullable = false, precision = 15, scale = 2)
     private BigDecimal total;

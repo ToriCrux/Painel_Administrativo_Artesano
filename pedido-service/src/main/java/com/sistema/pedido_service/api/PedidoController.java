@@ -1,5 +1,6 @@
 package com.sistema.pedido_service.api;
 
+import com.sistema.pedido_service.api.dto.ItemPedidoResponse;
 import com.sistema.pedido_service.api.dto.PedidoResponse;
 import com.sistema.pedido_service.aplicacao.PedidoService;
 import com.sistema.pedido_service.dominio.Pedido;
@@ -37,11 +38,18 @@ public class PedidoController {
                 .id(pedido.getId())
                 .codigo(pedido.getCodigo())
                 .nomeCliente(pedido.getNomeCliente())
-                .produto(pedido.getProduto())
-                .quantidade(pedido.getQuantidade())
-                .precoUnitario(pedido.getPrecoUnitario())
                 .total(pedido.getTotal())
                 .status(pedido.getStatus())
+                .itens(
+                        pedido.getItens().stream()
+                                .map(item -> ItemPedidoResponse.builder()
+                                        .nomeProduto(item.getNomeProduto())
+                                        .quantidade(item.getQuantidade())
+                                        .precoUnitario(item.getPrecoUnitario())
+                                        .total(item.getTotal())
+                                        .build())
+                                .toList()
+                )
                 .build();
     }
 }
