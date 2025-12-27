@@ -3,13 +3,15 @@ package com.sistema.catalogoservice.catalogo.produtoimagem.dominio;
 import com.sistema.catalogoservice.catalogo.produto.dominio.Produto;
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.OffsetDateTime;
 
 @Entity
 @Table(name = "tb_produto_imagem")
-@Getter @Setter
-@NoArgsConstructor @AllArgsConstructor @Builder
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class ProdutoImagem {
 
     @Id
@@ -47,7 +49,9 @@ public class ProdutoImagem {
 
     @PrePersist
     public void prePersist() {
-		this.criadoEm = OffsetDateTime.now();
+        var agora = OffsetDateTime.now();
+        this.criadoEm = agora;
+        this.atualizadoEm = agora; // ✅ adiciona esta linha
     }
 
     @PreUpdate
