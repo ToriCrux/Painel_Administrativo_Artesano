@@ -1,6 +1,5 @@
 package com.sistema.catalogoservice.catalogo.produto.infra;
 
-
 import com.sistema.catalogoservice.catalogo.produto.dominio.Produto;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -15,15 +14,15 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
 
     Optional<Produto> findByCodigoIgnoreCase(String codigo);
 
-    @EntityGraph(attributePaths = {"categoria", "cores"})
+    @EntityGraph(attributePaths = {"categoria", "subcategoria", "cores"})
     Page<Produto> findByNomeContainingIgnoreCase(String nome, Pageable pageable);
 
     @Override
-    @EntityGraph(attributePaths = {"categoria", "cores"})
+    @EntityGraph(attributePaths = {"categoria", "subcategoria", "cores"})
     Page<Produto> findAll(Pageable pageable);
 
     @Override
-    @EntityGraph(attributePaths = {"categoria", "cores"})
+    @EntityGraph(attributePaths = {"categoria", "subcategoria", "cores"})
     Optional<Produto> findById(Long id);
 
     @Query("SELECT p.id FROM Produto p WHERE p.ativo = true")

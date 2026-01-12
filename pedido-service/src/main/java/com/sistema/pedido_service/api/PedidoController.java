@@ -40,6 +40,7 @@ public class PedidoController {
                 .nomeCliente(pedido.getNomeCliente())
                 .total(pedido.getTotal())
                 .status(pedido.getStatus())
+                .dataCriacao(pedido.getDataCriacao() != null ? pedido.getDataCriacao().toString() : null)
                 .itens(
                         pedido.getItens().stream()
                                 .map(item -> ItemPedidoResponse.builder()

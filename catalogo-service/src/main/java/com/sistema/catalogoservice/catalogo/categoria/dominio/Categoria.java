@@ -2,8 +2,9 @@ package com.sistema.catalogoservice.catalogo.categoria.dominio;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.OffsetDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "tb_categoria", uniqueConstraints = {
@@ -23,6 +24,13 @@ public class Categoria {
     @Column(nullable = false, unique = true)
     private String nome;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categoria_pai_id")
+    private Categoria categoriaPai;
+
+    @OneToMany(mappedBy = "categoriaPai", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Categoria> subcategorias = new ArrayList<>();
+
     @Column(nullable = false)
     private Boolean ativo = true;
 
@@ -35,6 +43,7 @@ public class Categoria {
     @PrePersist
     public void prePersist() {
         this.criadoEm = OffsetDateTime.now();
+        this.atualizadoEm = OffsetDateTime.now();
     }
 
     @PreUpdate
@@ -42,4 +51,3 @@ public class Categoria {
         this.atualizadoEm = OffsetDateTime.now();
     }
 }
-

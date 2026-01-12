@@ -40,3 +40,7 @@ CREATE INDEX IF NOT EXISTS idx_pedido_codigo ON tb_pedido (codigo);
 CREATE INDEX IF NOT EXISTS idx_item_pedido_produto_id ON tb_item_pedido (produto_id);
 CREATE INDEX IF NOT EXISTS idx_item_pedido_pedido_id ON tb_item_pedido (pedido_id);
 
+-- 6️⃣ Adicionar colunas de auditoria
+ALTER TABLE tb_pedido
+ADD COLUMN IF NOT EXISTS data_criacao TIMESTAMPTZ DEFAULT NOW(),
+ADD COLUMN IF NOT EXISTS data_atualizacao TIMESTAMPTZ NULL;

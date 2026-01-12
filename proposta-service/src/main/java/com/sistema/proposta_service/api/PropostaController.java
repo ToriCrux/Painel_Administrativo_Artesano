@@ -46,7 +46,6 @@ public class PropostaController {
         return ResponseEntity.ok(toResponse(service.buscarPorCodigo(codigo)));
     }
 
-    // ✅ Pega o Authorization do request e repassa pro service
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PostMapping
     public ResponseEntity<PropostaResponse> criar(
@@ -66,7 +65,7 @@ public class PropostaController {
     }
 
     // -------------------------------
-    // Conversões DTO ↔ Entidade (Mantidas)
+    // Conversões DTO ↔ Entidade
     // -------------------------------
 
     private PropostaResponse toResponse(Proposta proposta) {
@@ -81,6 +80,7 @@ public class PropostaController {
                 .produtos(proposta.getProdutos().stream()
                         .map(this::toProdutoDTO)
                         .collect(Collectors.toList()))
+                .dataCriacao(proposta.getDataCriacao()) // 🆕 adicionado
                 .build();
     }
 

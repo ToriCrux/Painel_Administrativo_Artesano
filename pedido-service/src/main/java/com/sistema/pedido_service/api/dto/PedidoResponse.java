@@ -15,4 +15,5 @@ public class PedidoResponse {
     private BigDecimal total;
     private StatusPedido status;
     private List<ItemPedidoResponse> itens;
+    private String dataCriacao;
 }

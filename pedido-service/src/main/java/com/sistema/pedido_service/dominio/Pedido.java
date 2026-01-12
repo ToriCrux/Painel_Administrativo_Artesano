@@ -3,13 +3,18 @@ package com.sistema.pedido_service.dominio;
 import com.sistema.pedido_service.api.dto.StatusPedido;
 import jakarta.persistence.*;
 import lombok.*;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
 @Entity
 @Table(name = "tb_pedido")
+@EntityListeners(AuditingEntityListener.class) // 🔍 Necessário para auditoria automática
 @Getter
 @Setter
 @NoArgsConstructor
@@ -37,4 +42,12 @@ public class Pedido {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private StatusPedido status;
+
+    // 🕓 Novos campos de auditoria
+    @CreatedDate
+    @Column(updatable = false)
+    private LocalDateTime dataCriacao;
+
+    @LastModifiedDate
+    private LocalDateTime dataAtualizacao;
 }

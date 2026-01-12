@@ -2,9 +2,11 @@ package com.sistema.proposta_service.dominio;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.CreationTimestamp;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -49,6 +51,11 @@ public class Proposta {
     @Builder.Default
     private BigDecimal total = BigDecimal.ZERO;
 
+    // 🆕 NOVO CAMPO: Data e hora de criação da proposta
+    @Column(name = "data_criacao", nullable = false, updatable = false)
+    @CreationTimestamp
+    private LocalDateTime dataCriacao;
+
     public void adicionarProduto(ProdutoProposta produto) {
         if (produto == null) return;
         produto.setProposta(this);
@@ -68,9 +75,6 @@ public class Proposta {
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
-    /**
-     * Garante que todos os produtos apontem para esta proposta
-     */
     public void amarrarProdutos() {
         if (produtos == null) return;
         for (ProdutoProposta p : produtos) {

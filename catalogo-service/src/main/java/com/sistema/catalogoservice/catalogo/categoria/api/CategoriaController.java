@@ -1,6 +1,5 @@
 package com.sistema.catalogoservice.catalogo.categoria.api;
 
-
 import com.sistema.catalogoservice.catalogo.categoria.api.dto.CategoriaRequest;
 import com.sistema.catalogoservice.catalogo.categoria.api.dto.CategoriaResponse;
 import com.sistema.catalogoservice.catalogo.categoria.aplicacao.CategoriaService;
@@ -29,41 +28,46 @@ public class CategoriaController {
             @ParameterObject Pageable pageable) {
 
         Page<CategoriaResponse> page = categoriaService.listar(nome, pageable);
-
         if (page.isEmpty()) return ResponseEntity.noContent().build();
+        return ResponseEntity.ok(page);
+    }
 
+    // ✅ opcional: listar todas (inclui subcategorias isoladas)
+    @GetMapping("/todas")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Page<CategoriaResponse>> listarTodas(@ParameterObject Pageable pageable) {
+        Page<CategoriaResponse> page = categoriaService.listarTodas(pageable);
+        if (page.isEmpty()) return ResponseEntity.noContent().build();
         return ResponseEntity.ok(page);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<CategoriaResponse> listarCategoriaPorId(@PathVariable("id") Long id) {
-        CategoriaResponse categoria = categoriaService.listarPorId(id);
-        if (categoria == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(categoria);
+    public ResponseEntity<CategoriaResponse> listarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(categoriaService.listarPorId(id));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<CategoriaResponse> salvarCategoria(@RequestBody @Valid CategoriaRequest categoriaRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(categoriaService.salvar(categoriaRequest));
+    public ResponseEntity<CategoriaResponse> salvar(@RequestBody @Valid CategoriaRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(categoriaService.salvar(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<CategoriaResponse> atualizarCategoria(@PathVariable Long id, @RequestBody @Valid CategoriaRequest categoriaRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(categoriaService.atualizar(id, categoriaRequest));
+    public ResponseEntity<CategoriaResponse> atualizar(@PathVariable Long id, @RequestBody @Valid CategoriaRequest request) {
+        return ResponseEntity.ok(categoriaService.atualizar(id, request));
     }
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<CategoriaResponse> desativar(@PathVariable Long id) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(categoriaService.desativar(id));
+        return ResponseEntity.ok(categoriaService.desativar(id));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<Void> deletarCategoria(@PathVariable @Valid Long id) {
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
         categoriaService.deletar(id);
         return ResponseEntity.noContent().build();
     }

@@ -3,8 +3,8 @@ package com.sistema.catalogoservice.catalogo.categoria.api.dto;
 import jakarta.validation.constraints.NotBlank;
 import java.util.List;
 
-public record CategoriaRequest(
+public record SubcategoriaRequest(
         @NotBlank String nome,
         boolean ativo,
-        List<SubcategoriaRequest> subcategorias // ✅ lista de subcategorias aninhadas
+        List<SubcategoriaRequest> subcategorias // ✅ recursivo: permite níveis infinitos
 ) {}

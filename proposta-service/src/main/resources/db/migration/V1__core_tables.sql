@@ -15,10 +15,12 @@ CREATE TABLE IF NOT EXISTS tb_cliente (
     referencia    VARCHAR(150),
     criado_em     TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     atualizado_em TIMESTAMPTZ NULL
-    );
+);
 
 CREATE INDEX IF NOT EXISTS ix_cliente_nome ON tb_cliente (nome);
 CREATE INDEX IF NOT EXISTS ix_cliente_cpf_cnpj ON tb_cliente (cpf_cnpj);
+CREATE INDEX IF NOT EXISTS idx_cliente_nome ON tb_cliente(nome);
+CREATE INDEX IF NOT EXISTS idx_cliente_cidade ON tb_cliente(cidade);
 
 ------------ Proposta ------------
 CREATE TABLE IF NOT EXISTS tb_proposta (
@@ -29,11 +31,16 @@ CREATE TABLE IF NOT EXISTS tb_proposta (
     data_proposta  DATE NOT NULL,
     data_validade  DATE NOT NULL,
     total          NUMERIC(15,2) NOT NULL DEFAULT 0,
+
+    -- 🆕 NOVO CAMPO: data/hora de criação da proposta
+    data_criacao   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+
     criado_em      TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     atualizado_em  TIMESTAMPTZ NULL
-    );
+);
 
 CREATE INDEX IF NOT EXISTS ix_proposta_codigo ON tb_proposta (codigo);
+CREATE INDEX IF NOT EXISTS ix_proposta_data_criacao ON tb_proposta (data_criacao);
 
 ------------ Produto da Proposta ------------
 CREATE TABLE IF NOT EXISTS tb_produto_proposta (
@@ -44,10 +51,7 @@ CREATE TABLE IF NOT EXISTS tb_produto_proposta (
     quantidade     INT NOT NULL CHECK (quantidade > 0),
     preco_unitario NUMERIC(15,2) NOT NULL CHECK (preco_unitario >= 0),
     subtotal       NUMERIC(15,2) NOT NULL DEFAULT 0
-    );
+);
 
 CREATE INDEX IF NOT EXISTS ix_produto_proposta_codigo ON tb_produto_proposta (codigo_produto);
 CREATE INDEX IF NOT EXISTS ix_produto_proposta_proposta ON tb_produto_proposta (proposta_id);
-
-CREATE INDEX IF NOT EXISTS idx_cliente_nome ON tb_cliente(nome);
-CREATE INDEX IF NOT EXISTS idx_cliente_cidade ON tb_cliente(cidade);

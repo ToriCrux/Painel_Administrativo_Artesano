@@ -12,8 +12,10 @@ public record ProdutoRequest(
         @NotBlank @Size(max = 120)
         String nome,
 
-        @NotBlank @Size(max = 100)
-        String categoriaNome,
+        @NotNull
+        Long categoriaId, // ✅ Categoria obrigatória
+
+        Long subcategoriaId, // ✅ Subcategoria opcional
 
         Set<Long> corIds,
 
@@ -27,6 +29,4 @@ public record ProdutoRequest(
         Boolean ativo,
 
         String descricao
-) {
-
-}
+) {}

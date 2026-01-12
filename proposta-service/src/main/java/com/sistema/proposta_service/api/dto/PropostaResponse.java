@@ -5,6 +5,7 @@ import lombok.Getter;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Getter
@@ -19,4 +20,7 @@ public class PropostaResponse {
     private BigDecimal total;
     private ClienteDTO cliente;
     private List<ProdutoPropostaDTO> produtos;
+
+    // 🆕 NOVO CAMPO: Data e hora de criação
+    private LocalDateTime dataCriacao;
 }

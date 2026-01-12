@@ -30,8 +30,12 @@ public class Produto {
     private String nome;
 
     @ManyToOne(optional = false)
-    @JoinColumn(nullable = false)
+    @JoinColumn(name = "categoria_id", nullable = false)
     private Categoria categoria;
+
+    @ManyToOne
+    @JoinColumn(name = "subcategoria_id")
+    private Categoria subcategoria; // ✅ opcional
 
     @ManyToMany
     @JoinTable(
@@ -62,6 +66,7 @@ public class Produto {
     @PrePersist
     public void prePersist() {
         this.criadoEm = OffsetDateTime.now();
+        this.atualizadoEm = OffsetDateTime.now();
     }
 
     @PreUpdate
