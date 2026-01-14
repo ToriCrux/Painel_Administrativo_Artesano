@@ -1,6 +1,6 @@
 package com.sistema.catalogoservice.catalogo.produto.dominio;
 
-import com.sistema.catalogoservice.catalogo.categoria.dominio.Categoria;
+import com.sistema.catalogoservice.catalogo.categoria.dominio.ItemCategoria;
 import com.sistema.catalogoservice.catalogo.cor.dominio.Cor;
 import jakarta.persistence.*;
 import lombok.*;
@@ -29,13 +29,15 @@ public class Produto {
     @Column(nullable = false, length = 120)
     private String nome;
 
-    @ManyToOne(optional = false)
-    @JoinColumn(name = "categoria_id", nullable = false)
-    private Categoria categoria;
-
-    @ManyToOne
-    @JoinColumn(name = "subcategoria_id")
-    private Categoria subcategoria; // ✅ opcional
+    // ✅ Suporte a múltiplas categorias e itens
+    @ManyToMany
+    @JoinTable(
+            name = "tb_produto_item_categoria",
+            joinColumns = @JoinColumn(name = "produto_id"),
+            inverseJoinColumns = @JoinColumn(name = "item_categoria_id")
+    )
+    @Builder.Default
+    private Set<ItemCategoria> itensCategoria = new HashSet<>();
 
     @ManyToMany
     @JoinTable(

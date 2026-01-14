@@ -1,10 +1,8 @@
 package com.sistema.catalogoservice.catalogo.categoria.api.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import java.util.List;
 
-public record SubcategoriaRequest(
+public record ItemCategoriaRequest(
         @NotBlank String nome,
-        boolean ativo,
-        List<ItemCategoriaRequest> itens
+        boolean ativo
 ) {}

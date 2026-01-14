@@ -1,13 +1,10 @@
 package com.sistema.catalogoservice.catalogo.produto.aplicacao;
 
-import com.sistema.catalogoservice.catalogo.categoria.api.dto.CategoriaResponse;
-import com.sistema.catalogoservice.catalogo.categoria.dominio.Categoria;
-import com.sistema.catalogoservice.catalogo.categoria.infra.CategoriaRepository;
-import com.sistema.catalogoservice.catalogo.cor.api.dto.CorResponse;
+import com.sistema.catalogoservice.catalogo.categoria.dominio.*;
+import com.sistema.catalogoservice.catalogo.categoria.infra.ItemCategoriaRepository;
 import com.sistema.catalogoservice.catalogo.cor.dominio.Cor;
 import com.sistema.catalogoservice.catalogo.cor.infra.CorRepository;
-import com.sistema.catalogoservice.catalogo.produto.api.dto.ProdutoRequest;
-import com.sistema.catalogoservice.catalogo.produto.api.dto.ProdutoResponse;
+import com.sistema.catalogoservice.catalogo.produto.api.dto.*;
 import com.sistema.catalogoservice.catalogo.produto.dominio.Produto;
 import com.sistema.catalogoservice.catalogo.produto.infra.ProdutoRepository;
 import com.sistema.catalogoservice.catalogo.produtoimagem.infra.ProdutoImagemRepository;
@@ -18,9 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -28,13 +25,15 @@ import java.util.stream.Collectors;
 public class ProdutoService {
 
     private final ProdutoRepository produtoRepository;
-    private final CategoriaRepository categoriaRepository;
+    private final ItemCategoriaRepository itemCategoriaRepository;
     private final CorRepository corRepository;
     private final ProdutoImagemRepository produtoImagemRepository;
 
-    // =====================================================
-    // LISTAR
-    // =====================================================
+    // ======================================================
+    // ==================== LISTAGEM =========================
+    // ======================================================
+
+    @Transactional(readOnly = true)
     public Page<ProdutoResponse> listar(String nome, Pageable pageable) {
         var page = (nome != null && !nome.isBlank())
                 ? produtoRepository.findByNomeContainingIgnoreCase(nome, pageable)
@@ -43,53 +42,31 @@ public class ProdutoService {
         return page.map(this::toResponse);
     }
 
-    // =====================================================
-    // LISTAR POR ID
-    // =====================================================
+    @Transactional(readOnly = true)
     public ProdutoResponse listarPorId(Long id) {
         Produto produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado para este id."));
         return toResponse(produto);
     }
 
-    // =====================================================
-    // SALVAR
-    // =====================================================
+    // ======================================================
+    // ==================== CRIAÇÃO ==========================
+    // ======================================================
+
+    @Transactional
     public ProdutoResponse salvar(ProdutoRequest request) {
         produtoRepository.findByCodigoIgnoreCase(request.codigo())
-                .ifPresent(p -> { throw new ConflictException("Código de produto já existe!"); });
+                .ifPresent(p -> {
+                    throw new ConflictException("Código de produto já existe!");
+                });
 
-        // ✅ Categoria principal (obrigatória)
-        Categoria categoria = categoriaRepository.findById(request.categoriaId())
-                .orElseThrow(() -> new NotFoundException("Categoria não encontrada: " + request.categoriaId()));
+        Set<ItemCategoria> itens = resolveItensCategoria(request);
+        Set<Cor> cores = resolveCoresPorNome(request.corNome(), request.subcorNomes());
 
-        // ✅ Subcategoria (opcional)
-        Categoria subcategoria = null;
-        if (request.subcategoriaId() != null) {
-            subcategoria = categoriaRepository.findById(request.subcategoriaId())
-                    .orElseThrow(() -> new NotFoundException("Subcategoria não encontrada: " + request.subcategoriaId()));
-
-            // ⚠️ Valida se subcategoria pertence à categoria pai correta
-            if (subcategoria.getCategoriaPai() == null ||
-                    !subcategoria.getCategoriaPai().getId().equals(categoria.getId())) {
-                throw new ConflictException("A subcategoria informada não pertence à categoria selecionada.");
-            }
-        }
-
-        // ✅ Cores
-        Set<Cor> cores = request.corIds() != null && !request.corIds().isEmpty()
-                ? request.corIds().stream()
-                .map(id -> corRepository.findById(id)
-                        .orElseThrow(() -> new EntityNotFoundException("Cor não encontrada: " + id)))
-                .collect(Collectors.toSet())
-                : new HashSet<>();
-
-        // ✅ Criação do produto
         Produto produto = Produto.builder()
                 .codigo(request.codigo())
                 .nome(request.nome())
-                .categoria(categoria)
-                .subcategoria(subcategoria)
+                .itensCategoria(itens)
                 .cores(cores)
                 .medidas(request.medidas())
                 .precoUnitario(request.precoUnitario())
@@ -97,58 +74,49 @@ public class ProdutoService {
                 .descricao(request.descricao())
                 .build();
 
-        return toResponse(produtoRepository.save(produto));
+        Produto salvo = produtoRepository.save(produto);
+        return toResponse(salvo);
     }
 
-    // =====================================================
-    // ATUALIZAR
-    // =====================================================
+    // ======================================================
+    // ==================== ATUALIZAÇÃO ======================
+    // ======================================================
+
+    @Transactional
     public ProdutoResponse atualizar(Long id, ProdutoRequest request) {
         Produto produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
 
         if (!produto.getCodigo().equalsIgnoreCase(request.codigo())) {
             produtoRepository.findByCodigoIgnoreCase(request.codigo())
-                    .ifPresent(p -> { throw new ConflictException("Código já existe"); });
+                    .ifPresent(p -> {
+                        throw new ConflictException("Código já existe");
+                    });
         }
-
-        Categoria categoria = categoriaRepository.findById(request.categoriaId())
-                .orElseThrow(() -> new NotFoundException("Categoria não encontrada"));
-
-        Categoria subcategoria = null;
-        if (request.subcategoriaId() != null) {
-            subcategoria = categoriaRepository.findById(request.subcategoriaId())
-                    .orElseThrow(() -> new NotFoundException("Subcategoria não encontrada"));
-
-            if (subcategoria.getCategoriaPai() == null ||
-                    !subcategoria.getCategoriaPai().getId().equals(categoria.getId())) {
-                throw new ConflictException("A subcategoria informada não pertence à categoria selecionada.");
-            }
-        }
-
-        Set<Cor> cores = request.corIds() != null && !request.corIds().isEmpty()
-                ? request.corIds().stream()
-                .map(corId -> corRepository.findById(corId)
-                        .orElseThrow(() -> new EntityNotFoundException("Cor não encontrada: " + corId)))
-                .collect(Collectors.toSet())
-                : new HashSet<>();
 
         produto.setCodigo(request.codigo());
         produto.setNome(request.nome());
-        produto.setCategoria(categoria);
-        produto.setSubcategoria(subcategoria);
-        produto.setCores(cores);
         produto.setMedidas(request.medidas());
         produto.setPrecoUnitario(request.precoUnitario());
         produto.setAtivo(request.ativo());
         produto.setDescricao(request.descricao());
+        produto.setCores(resolveCoresPorNome(request.corNome(), request.subcorNomes()));
 
-        return toResponse(produtoRepository.save(produto));
+        if (request.categorias() != null && !request.categorias().isEmpty()) {
+            produto.getItensCategoria().clear();
+            Set<ItemCategoria> novosItens = resolveItensCategoria(request);
+            produto.getItensCategoria().addAll(novosItens);
+        }
+
+        Produto atualizado = produtoRepository.save(produto);
+        return toResponse(atualizado);
     }
 
-    // =====================================================
-    // DESATIVAR
-    // =====================================================
+    // ======================================================
+    // ==================== DESATIVAR ========================
+    // ======================================================
+
+    @Transactional
     public ProdutoResponse desativar(Long id) {
         Produto produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
@@ -156,60 +124,87 @@ public class ProdutoService {
         return toResponse(produtoRepository.save(produto));
     }
 
-    // =====================================================
-    // DELETAR
-    // =====================================================
+    // ======================================================
+    // ==================== DELETAR ==========================
+    // ======================================================
+
+    @Transactional
     public void deletar(Long id) {
         Produto produto = produtoRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Produto não encontrado"));
         produtoRepository.delete(produto);
     }
 
-    // =====================================================
-    // HELPERS
-    // =====================================================
-    private String buildImagemPrincipalUrl(Long produtoId) {
-        return produtoImagemRepository
-                .findFirstByProdutoIdAndPrincipalTrue(produtoId)
-                .map(img -> "/produtos/" + produtoId + "/imagens/" + img.getId())
-                .orElse(null);
+    // ======================================================
+    // ==================== HELPERS ==========================
+    // ======================================================
+
+    private Set<ItemCategoria> resolveItensCategoria(ProdutoRequest request) {
+        Set<ItemCategoria> itens = new HashSet<>();
+
+        for (var categoria : request.categorias()) {
+            for (var sub : categoria.subcategorias()) {
+                for (var itemNome : sub.itens()) {
+                    ItemCategoria item = itemCategoriaRepository.findByHierarquia(
+                            categoria.categoriaNome(),
+                            sub.subcategoriaNome(),
+                            itemNome
+                    ).orElseThrow(() -> new NotFoundException(
+                            "Categoria/Subcategoria/Item não encontrados: "
+                                    + categoria.categoriaNome() + " / " + sub.subcategoriaNome() + " / " + itemNome
+                    ));
+                    itens.add(item);
+                }
+            }
+        }
+        return itens;
     }
 
     private ProdutoResponse toResponse(Produto produto) {
         var principalUrl = buildImagemPrincipalUrl(produto.getId());
 
-        var categoriaResponse = new CategoriaResponse(
-                produto.getCategoria().getId(),
-                produto.getCategoria().getNome(),
-                produto.getCategoria().getAtivo(),
-                produto.getCategoria().getCriadoEm(),
-                produto.getCategoria().getAtualizadoEm(),
-                null
-        );
+        List<CategoriaHierarquiaResponse> categoriasResponse = produto.getItensCategoria().stream()
+                .collect(Collectors.groupingBy(item -> item.getSubcategoria().getCategoria()))
+                .entrySet().stream()
+                .map(catEntry -> {
+                    var categoria = catEntry.getKey();
 
-        var subcategoriaResponse = (produto.getSubcategoria() != null)
-                ? new CategoriaResponse(
-                produto.getSubcategoria().getId(),
-                produto.getSubcategoria().getNome(),
-                produto.getSubcategoria().getAtivo(),
-                produto.getSubcategoria().getCriadoEm(),
-                produto.getSubcategoria().getAtualizadoEm(),
-                null
-        )
-                : null;
+                    List<SubcategoriaHierarquiaResponse> subcategorias = catEntry.getValue().stream()
+                            .collect(Collectors.groupingBy(ItemCategoria::getSubcategoria))
+                            .entrySet().stream()
+                            .map(subEntry -> {
+                                var sub = subEntry.getKey();
+                                List<ItemHierarquiaResponse> itens = subEntry.getValue().stream()
+                                        .map(i -> new ItemHierarquiaResponse(i.getId(), i.getNome()))
+                                        .toList();
+
+                                return new SubcategoriaHierarquiaResponse(sub.getId(), sub.getNome(), itens);
+                            })
+                            .toList();
+
+                    return new CategoriaHierarquiaResponse(categoria.getId(), categoria.getNome(), subcategorias);
+                })
+                .toList();
+
+        // Agrupa cores em hierarquia (grupo + subcores)
+        List<CorHierarquiaResponse> coresHierarquia = produto.getCores().stream()
+                .filter(c -> c.getGrupo() == null)
+                .map(grupo -> {
+                    List<SubcorResponse> subcores = produto.getCores().stream()
+                            .filter(sub -> sub.getGrupo() != null && sub.getGrupo().getId().equals(grupo.getId()))
+                            .map(sub -> new SubcorResponse(sub.getId(), sub.getNome(), sub.getHex()))
+                            .toList();
+
+                    return new CorHierarquiaResponse(grupo.getId(), grupo.getNome(), grupo.getHex(), subcores);
+                })
+                .toList();
 
         return new ProdutoResponse(
                 produto.getId(),
                 produto.getCodigo(),
                 produto.getNome(),
-                categoriaResponse,
-                subcategoriaResponse,
-                produto.getCores().stream()
-                        .map(c -> new CorResponse(
-                                c.getId(), c.getNome(), c.getHex(),
-                                c.getAtivo(), c.getCriadoEm(), c.getAtualizadoEm()
-                        ))
-                        .collect(Collectors.toSet()),
+                categoriasResponse,
+                coresHierarquia,
                 produto.getMedidas(),
                 produto.getPrecoUnitario(),
                 produto.getAtivo(),
@@ -218,5 +213,30 @@ public class ProdutoService {
                 produto.getCriadoEm(),
                 produto.getAtualizadoEm()
         );
+    }
+
+    private Set<Cor> resolveCoresPorNome(String corNome, List<String> subcorNomes) {
+        if (corNome == null || corNome.isBlank()) return Collections.emptySet();
+
+        Cor grupo = corRepository.findByNomeIgnoreCase(corNome)
+                .orElseThrow(() -> new NotFoundException("Cor/grupo não encontrado: " + corNome));
+
+        Set<Cor> cores = new HashSet<>();
+        cores.add(grupo);
+
+        if (subcorNomes != null && !subcorNomes.isEmpty()) {
+            List<Cor> subcores = corRepository.findAll().stream()
+                    .filter(c -> c.getGrupo() != null && c.getGrupo().getId().equals(grupo.getId())
+                            && subcorNomes.stream().anyMatch(n -> n.equalsIgnoreCase(c.getNome())))
+                    .collect(Collectors.toList());
+            cores.addAll(subcores);
+        }
+        return cores;
+    }
+
+    private String buildImagemPrincipalUrl(Long produtoId) {
+        return produtoImagemRepository.findFirstByProdutoIdAndPrincipalTrue(produtoId)
+                .map(img -> "/api/v1/produtos/" + produtoId + "/imagens/" + img.getId())
+                .orElse(null);
     }
 }

@@ -1,22 +1,17 @@
-package com.sistema.catalogoservice.catalogo.cor.dominio;
+package com.sistema.catalogoservice.catalogo.categoria.dominio;
 
 import jakarta.persistence.*;
 import lombok.*;
-
 import java.time.OffsetDateTime;
-import java.util.ArrayList;
-import java.util.List;
 
 @Entity
-@Table(name = "tb_cor", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "nome")
-})
+@Table(name = "tb_item_categoria")
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Cor {
+public class ItemCategoria {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,15 +20,9 @@ public class Cor {
     @Column(nullable = false)
     private String nome;
 
-    @Column(length = 7)
-    private String hex;
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "grupo_id")
-    private Cor grupo;
-
-    @OneToMany(mappedBy = "grupo", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Cor> subcores = new ArrayList<>();
+    @JoinColumn(name = "subcategoria_id", nullable = false)
+    private Subcategoria subcategoria;
 
     @Column(nullable = false)
     private Boolean ativo = true;

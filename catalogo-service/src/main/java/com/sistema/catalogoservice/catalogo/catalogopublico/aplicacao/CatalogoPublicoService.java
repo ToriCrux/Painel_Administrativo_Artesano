@@ -8,6 +8,7 @@ import com.sistema.catalogoservice.catalogo.produtocampoexibicao.infra.ProdutoCa
 import com.sistema.catalogoservice.catalogo.produtocampoexibicao.infra.CampoExibicaoPadraoRepository;
 import com.sistema.catalogoservice.catalogo.catalogopublico.dto.CatalogoProdutoResponse;
 import com.sistema.catalogoservice.catalogo.produtoimagem.infra.ProdutoImagemRepository;
+import com.sistema.catalogoservice.catalogo.categoria.dominio.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -32,13 +33,20 @@ public class CatalogoPublicoService {
 
         Map<String, Boolean> padrao = campoExibicaoPadraoRepository.findAll()
                 .stream()
-                .collect(Collectors.toMap(CampoExibicaoPadrao::getNome, CampoExibicaoPadrao::getVisivelPadrao));
+                .collect(Collectors.toMap(
+                        CampoExibicaoPadrao::getNome,
+                        CampoExibicaoPadrao::getVisivelPadrao
+                ));
 
         return produtos.stream().map(produto -> {
 
+            // 🔹 Campos customizados configuráveis
             Map<String, Boolean> custom = produtoCampoExibicaoRepository.findByProdutoId(produto.getId())
                     .stream()
-                    .collect(Collectors.toMap(ProdutoCampoExibicao::getCampo, ProdutoCampoExibicao::getVisivel));
+                    .collect(Collectors.toMap(
+                            ProdutoCampoExibicao::getCampo,
+                            ProdutoCampoExibicao::getVisivel
+                    ));
 
             Map<String, Boolean> merged = new LinkedHashMap<>(padrao);
             merged.putAll(custom);
@@ -50,16 +58,39 @@ public class CatalogoPublicoService {
             if (merged.getOrDefault("descricao", true)) camposVisiveis.put("descricao", produto.getDescricao());
             if (merged.getOrDefault("precoUnitario", true)) camposVisiveis.put("precoUnitario", produto.getPrecoUnitario());
             if (merged.getOrDefault("medidas", true)) camposVisiveis.put("medidas", produto.getMedidas());
-            if (merged.getOrDefault("categoria", true)) camposVisiveis.put("categoria", produto.getCategoria().getNome());
 
-            // 🔹 Carregar imagens
+            // ✅ Agora o produto possui múltiplos itensCategoria
+            if (merged.getOrDefault("categoria", true)) {
+                try {
+                    List<Map<String, Object>> categoriasInfo = produto.getItensCategoria().stream().map(item -> {
+                        Map<String, Object> categoriaInfo = new LinkedHashMap<>();
+                        Subcategoria sub = item.getSubcategoria();
+                        Categoria cat = (sub != null) ? sub.getCategoria() : null;
+
+                        if (cat != null) categoriaInfo.put("categoria", cat.getNome());
+                        if (sub != null) categoriaInfo.put("subcategoria", sub.getNome());
+                        categoriaInfo.put("item", item.getNome());
+
+                        return categoriaInfo;
+                    }).toList();
+
+                    camposVisiveis.put("categorias", categoriasInfo);
+                } catch (Exception e) {
+                    camposVisiveis.put("categorias", List.of(Map.of("erro", "Categoria não disponível")));
+                }
+            }
+
+            // 🔹 Carregar imagens públicas do produto
             var imagens = produtoImagemRepository.findByProdutoIdOrderByPrincipalDescOrdemAscIdAsc(produto.getId());
 
             CatalogoProdutoResponse.ImagemPrincipal imagemPrincipal = null;
             List<CatalogoProdutoResponse.ImagemSecundaria> imagensSecundarias = List.of();
 
             if (!imagens.isEmpty()) {
-                var principal = imagens.stream().filter(i -> Boolean.TRUE.equals(i.getPrincipal())).findFirst();
+                var principal = imagens.stream()
+                        .filter(i -> Boolean.TRUE.equals(i.getPrincipal()))
+                        .findFirst();
+
                 if (principal.isPresent()) {
                     var img = principal.get();
                     imagemPrincipal = new CatalogoProdutoResponse.ImagemPrincipal(
@@ -83,6 +114,7 @@ public class CatalogoPublicoService {
                         .toList();
             }
 
+            // 🔹 Monta resposta final
             return new CatalogoProdutoResponse(
                     produto.getId(),
                     produto.getCodigo(),

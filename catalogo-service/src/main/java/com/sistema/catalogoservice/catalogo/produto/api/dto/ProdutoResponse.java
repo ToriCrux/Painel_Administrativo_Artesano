@@ -1,19 +1,18 @@
 package com.sistema.catalogoservice.catalogo.produto.api.dto;
 
-import com.sistema.catalogoservice.catalogo.categoria.api.dto.CategoriaResponse;
-import com.sistema.catalogoservice.catalogo.cor.api.dto.CorResponse;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.Set;
+import java.util.List;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record ProdutoResponse(
 		Long id,
 		String codigo,
 		String nome,
-		CategoriaResponse categoria,
-		CategoriaResponse subcategoria,
-		Set<CorResponse> cores,
+		List<CategoriaHierarquiaResponse> categoriasHierarquia,
+		List<CorHierarquiaResponse> coresHierarquia,
 		String medidas,
 		BigDecimal precoUnitario,
 		Boolean ativo,

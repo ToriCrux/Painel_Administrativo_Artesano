@@ -7,9 +7,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "tb_categoria", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "nome")
-})
+@Table(name = "tb_categoria")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -24,12 +22,9 @@ public class Categoria {
     @Column(nullable = false, unique = true)
     private String nome;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "categoria_pai_id")
-    private Categoria categoriaPai;
-
-    @OneToMany(mappedBy = "categoriaPai", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Categoria> subcategorias = new ArrayList<>();
+    @OneToMany(mappedBy = "categoria", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<Subcategoria> subcategorias = new ArrayList<>();
 
     @Column(nullable = false)
     private Boolean ativo = true;

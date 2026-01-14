@@ -2,7 +2,7 @@ package com.sistema.catalogoservice.catalogo.produto.api.dto;
 
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
-import java.util.Set;
+import java.util.List;
 
 public record ProdutoRequest(
 
@@ -13,11 +13,12 @@ public record ProdutoRequest(
         String nome,
 
         @NotNull
-        Long categoriaId, // ✅ Categoria obrigatória
+        List<CategoriaHierarquiaRequest> categorias, // ✅ nova estrutura hierárquica
 
-        Long subcategoriaId, // ✅ Subcategoria opcional
+        @NotBlank
+        String corNome,
 
-        Set<Long> corIds,
+        List<String> subcorNomes,
 
         @Size(max = 120)
         String medidas,

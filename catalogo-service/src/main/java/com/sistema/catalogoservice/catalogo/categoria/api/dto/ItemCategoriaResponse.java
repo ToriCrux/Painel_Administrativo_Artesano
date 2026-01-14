@@ -1,13 +1,11 @@
 package com.sistema.catalogoservice.catalogo.categoria.api.dto;
 
 import java.time.OffsetDateTime;
-import java.util.List;
 
-public record CategoriaResponse(
+public record ItemCategoriaResponse(
         Long id,
         String nome,
         Boolean ativo,
         OffsetDateTime criadoEm,
-        OffsetDateTime atualizadoEm,
-        List<SubcategoriaResponse> subcategorias
+        OffsetDateTime atualizadoEm
 ) {}

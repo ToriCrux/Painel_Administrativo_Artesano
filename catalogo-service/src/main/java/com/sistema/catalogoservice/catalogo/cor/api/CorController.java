@@ -1,6 +1,5 @@
 package com.sistema.catalogoservice.catalogo.cor.api;
 
-
 import com.sistema.catalogoservice.catalogo.cor.api.dto.CorRequest;
 import com.sistema.catalogoservice.catalogo.cor.api.dto.CorResponse;
 import com.sistema.catalogoservice.catalogo.cor.aplicacao.CorService;
@@ -29,36 +28,32 @@ public class CorController {
             @ParameterObject Pageable pageable) {
 
         Page<CorResponse> page = corService.listar(nome, pageable);
-
         if (page.isEmpty()) return ResponseEntity.noContent().build();
-
         return ResponseEntity.ok(page);
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<CorResponse> listarCorPorId(@PathVariable("id") Long id) {
-        CorResponse cor = corService.listarPorId(id);
-        if (cor == null) return ResponseEntity.notFound().build();
-        return ResponseEntity.ok(cor);
+    public ResponseEntity<CorResponse> listarPorId(@PathVariable Long id) {
+        return ResponseEntity.ok(corService.listarPorId(id));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<CorResponse> salvarCor(@RequestBody @Valid CorRequest corRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(corService.salvar(corRequest));
+    public ResponseEntity<CorResponse> salvar(@RequestBody @Valid CorRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(corService.salvar(request));
     }
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<CorResponse> atualizarCor(@PathVariable Long id, @RequestBody @Valid CorRequest corRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(corService.atualizar(id, corRequest));
+    public ResponseEntity<CorResponse> atualizar(@PathVariable Long id, @RequestBody @Valid CorRequest request) {
+        return ResponseEntity.ok(corService.atualizar(id, request));
     }
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<CorResponse> desativar(@PathVariable Long id) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(corService.desativar(id));
+        return ResponseEntity.ok(corService.desativar(id));
     }
 
     @DeleteMapping("/{id}")

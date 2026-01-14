@@ -1,4 +1,4 @@
--- Cria tabela de imagens de produto (armazenamento BYTEA)
+
 CREATE TABLE IF NOT EXISTS tb_produto_imagem (
     id BIGSERIAL PRIMARY KEY,
     produto_id BIGINT NOT NULL REFERENCES tb_produto(id) ON DELETE CASCADE,

@@ -1,14 +1,13 @@
-package com.sistema.catalogoservice.catalogo.cor.api.dto;
+package com.sistema.catalogoservice.catalogo.categoria.api.dto;
 
 import java.time.OffsetDateTime;
 import java.util.List;
 
-public record CorResponse(
+public record SubcategoriaResponse(
         Long id,
         String nome,
-        String hex,
         Boolean ativo,
         OffsetDateTime criadoEm,
         OffsetDateTime atualizadoEm,
-        List<CorResponse> subcores
+        List<ItemCategoriaResponse> itens
 ) {}
