@@ -1,6 +1,6 @@
 package com.sistema.catalogoservice.catalogo.produto.aplicacao;
 
-import com.sistema.catalogoservice.catalogo.categoria.dominio.*;
+import com.sistema.catalogoservice.catalogo.categoria.dominio.ItemCategoria;
 import com.sistema.catalogoservice.catalogo.categoria.infra.ItemCategoriaRepository;
 import com.sistema.catalogoservice.catalogo.cor.dominio.Cor;
 import com.sistema.catalogoservice.catalogo.cor.infra.CorRepository;
@@ -61,7 +61,7 @@ public class ProdutoService {
                 });
 
         Set<ItemCategoria> itens = resolveItensCategoria(request);
-        Set<Cor> cores = resolveCoresPorNome(request.corNome(), request.subcorNomes());
+        Set<Cor> cores = resolveCoresPorGrupos(request.cores());
 
         Produto produto = Produto.builder()
                 .codigo(request.codigo())
@@ -100,7 +100,9 @@ public class ProdutoService {
         produto.setPrecoUnitario(request.precoUnitario());
         produto.setAtivo(request.ativo());
         produto.setDescricao(request.descricao());
-        produto.setCores(resolveCoresPorNome(request.corNome(), request.subcorNomes()));
+
+        // ✅ agora resolve múltiplas cores e subcores por grupo
+        produto.setCores(resolveCoresPorGrupos(request.cores()));
 
         if (request.categorias() != null && !request.categorias().isEmpty()) {
             produto.getItensCategoria().clear();
@@ -186,7 +188,7 @@ public class ProdutoService {
                 })
                 .toList();
 
-        // Agrupa cores em hierarquia (grupo + subcores)
+        // ✅ Agrupa cores em hierarquia (grupo + subcores)
         List<CorHierarquiaResponse> coresHierarquia = produto.getCores().stream()
                 .filter(c -> c.getGrupo() == null)
                 .map(grupo -> {
@@ -215,23 +217,59 @@ public class ProdutoService {
         );
     }
 
-    private Set<Cor> resolveCoresPorNome(String corNome, List<String> subcorNomes) {
-        if (corNome == null || corNome.isBlank()) return Collections.emptySet();
+    /**
+     * ✅ Resolve N grupos de cor, cada um com N subcores.
+     * - Adiciona o grupo (somente se for grupo: grupo == null)
+     * - Adiciona subcores somente se pertencerem ao grupo
+     * - Valida subcores faltantes
+     */
+    private Set<Cor> resolveCoresPorGrupos(List<CorGrupoRequest> gruposRequest) {
+        if (gruposRequest == null || gruposRequest.isEmpty()) return Collections.emptySet();
 
-        Cor grupo = corRepository.findByNomeIgnoreCase(corNome)
-                .orElseThrow(() -> new NotFoundException("Cor/grupo não encontrado: " + corNome));
+        Set<Cor> resultado = new HashSet<>();
 
-        Set<Cor> cores = new HashSet<>();
-        cores.add(grupo);
+        for (CorGrupoRequest grpReq : gruposRequest) {
+            if (grpReq == null || grpReq.corNome() == null || grpReq.corNome().isBlank()) continue;
 
-        if (subcorNomes != null && !subcorNomes.isEmpty()) {
-            List<Cor> subcores = corRepository.findAll().stream()
-                    .filter(c -> c.getGrupo() != null && c.getGrupo().getId().equals(grupo.getId())
-                            && subcorNomes.stream().anyMatch(n -> n.equalsIgnoreCase(c.getNome())))
-                    .collect(Collectors.toList());
-            cores.addAll(subcores);
+            // ✅ garante que estamos pegando um "grupo" de cor (grupo_id null)
+            Cor grupo = corRepository.findByGrupoIsNullAndNomeIgnoreCase(grpReq.corNome())
+                    .orElseThrow(() -> new NotFoundException("Cor/grupo não encontrado: " + grpReq.corNome()));
+
+            resultado.add(grupo);
+
+            List<String> subNomes = grpReq.subcorNomes();
+            if (subNomes == null || subNomes.isEmpty()) continue;
+
+            // ✅ normaliza para o formato esperado pelo repository (nomesLower)
+            List<String> nomesLower = subNomes.stream()
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(s -> !s.isBlank())
+                    .map(String::toLowerCase)
+                    .toList();
+
+            // ✅ Busca somente subcores daquele grupo (sem varrer findAll)
+            List<Cor> subcores = corRepository.findSubcoresDoGrupoPorNomes(grupo.getId(), nomesLower);
+
+            // valida se todas as subcores pedidas foram encontradas
+            Set<String> encontradasLower = subcores.stream()
+                    .map(c -> c.getNome().toLowerCase())
+                    .collect(Collectors.toSet());
+
+            List<String> faltando = subNomes.stream()
+                    .filter(n -> n != null && !n.isBlank())
+                    .filter(n -> !encontradasLower.contains(n.trim().toLowerCase()))
+                    .toList();
+
+            if (!faltando.isEmpty()) {
+                throw new NotFoundException("Subcores não encontradas (ou não pertencem ao grupo '"
+                        + grupo.getNome() + "'): " + faltando);
+            }
+
+            resultado.addAll(subcores);
         }
-        return cores;
+
+        return resultado;
     }
 
     private String buildImagemPrincipalUrl(Long produtoId) {

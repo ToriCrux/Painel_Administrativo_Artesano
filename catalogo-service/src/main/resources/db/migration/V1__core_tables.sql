@@ -23,8 +23,11 @@ CREATE TABLE IF NOT EXISTS tb_subcategoria (
     atualizado_em TIMESTAMPTZ NULL
 );
 
-CREATE UNIQUE INDEX uq_subcategoria_nome_categoria ON tb_subcategoria (LOWER(nome), categoria_id);
-CREATE INDEX IF NOT EXISTS idx_subcategoria_categoria_id ON tb_subcategoria (categoria_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_subcategoria_nome_categoria
+ON tb_subcategoria (LOWER(nome), categoria_id);
+
+CREATE INDEX IF NOT EXISTS idx_subcategoria_categoria_id
+ON tb_subcategoria (categoria_id);
 
 -- ======================================
 -- TABELA: ITEM DE CATEGORIA
@@ -38,11 +41,14 @@ CREATE TABLE IF NOT EXISTS tb_item_categoria (
     atualizado_em TIMESTAMPTZ NULL
 );
 
-CREATE UNIQUE INDEX uq_item_nome_subcategoria ON tb_item_categoria (LOWER(nome), subcategoria_id);
-CREATE INDEX IF NOT EXISTS idx_item_subcategoria_id ON tb_item_categoria (subcategoria_id);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_item_nome_subcategoria
+ON tb_item_categoria (LOWER(nome), subcategoria_id);
+
+CREATE INDEX IF NOT EXISTS idx_item_subcategoria_id
+ON tb_item_categoria (subcategoria_id);
 
 -- ======================================
--- TABELA: COR
+-- TABELA: COR (✅ CORRIGIDA)
 -- ======================================
 CREATE TABLE IF NOT EXISTS tb_cor (
     id BIGSERIAL PRIMARY KEY,
@@ -54,15 +60,24 @@ CREATE TABLE IF NOT EXISTS tb_cor (
     atualizado_em TIMESTAMPTZ NULL,
     CONSTRAINT fk_cor_grupo FOREIGN KEY (grupo_id)
         REFERENCES tb_cor(id)
-        ON DELETE SET NULL,
-    CONSTRAINT uq_cor_nome_grupo UNIQUE (nome, grupo_id)
+        ON DELETE CASCADE
 );
 
 CREATE INDEX IF NOT EXISTS idx_cor_grupo_id ON tb_cor(grupo_id);
+CREATE INDEX IF NOT EXISTS idx_cor_nome_lower ON tb_cor(lower(nome));
+
+-- ✅ raiz: nome único (case-insensitive) quando grupo_id IS NULL
+CREATE UNIQUE INDEX IF NOT EXISTS ux_cor_root_nome
+ON tb_cor (lower(nome))
+WHERE grupo_id IS NULL;
+
+-- ✅ subcores: nome único por grupo (case-insensitive) quando grupo_id IS NOT NULL
+CREATE UNIQUE INDEX IF NOT EXISTS ux_cor_sub_nome_por_grupo
+ON tb_cor (grupo_id, lower(nome))
+WHERE grupo_id IS NOT NULL;
 
 -- ======================================
 -- TABELA: PRODUTO
--- (❌ sem coluna item_categoria_id — relacionamento via join table)
 -- ======================================
 CREATE TABLE IF NOT EXISTS tb_produto (
     id BIGSERIAL PRIMARY KEY,
@@ -76,11 +91,11 @@ CREATE TABLE IF NOT EXISTS tb_produto (
     atualizado_em TIMESTAMPTZ NULL
 );
 
-CREATE UNIQUE INDEX uq_produto_codigo_lower ON tb_produto (LOWER(codigo));
-CREATE INDEX idx_produto_nome ON tb_produto (nome);
+CREATE UNIQUE INDEX IF NOT EXISTS uq_produto_codigo_lower ON tb_produto (LOWER(codigo));
+CREATE INDEX IF NOT EXISTS idx_produto_nome ON tb_produto (nome);
 
 -- ======================================
--- NOVA TABELA: PRODUTO x ITEM_CATEGORIA (ManyToMany)
+-- PRODUTO x ITEM_CATEGORIA (ManyToMany)
 -- ======================================
 CREATE TABLE IF NOT EXISTS tb_produto_item_categoria (
     produto_id BIGINT NOT NULL REFERENCES tb_produto(id) ON DELETE CASCADE,
@@ -88,11 +103,11 @@ CREATE TABLE IF NOT EXISTS tb_produto_item_categoria (
     PRIMARY KEY (produto_id, item_categoria_id)
 );
 
-CREATE INDEX idx_produto_item_categoria_produto ON tb_produto_item_categoria (produto_id);
-CREATE INDEX idx_produto_item_categoria_item ON tb_produto_item_categoria (item_categoria_id);
+CREATE INDEX IF NOT EXISTS idx_produto_item_categoria_produto ON tb_produto_item_categoria (produto_id);
+CREATE INDEX IF NOT EXISTS idx_produto_item_categoria_item ON tb_produto_item_categoria (item_categoria_id);
 
 -- ======================================
--- TABELA: PRODUTO x COR
+-- PRODUTO x COR (ManyToMany)
 -- ======================================
 CREATE TABLE IF NOT EXISTS tb_produto_cor (
     produto_id BIGINT NOT NULL REFERENCES tb_produto(id) ON DELETE CASCADE,
@@ -100,8 +115,8 @@ CREATE TABLE IF NOT EXISTS tb_produto_cor (
     PRIMARY KEY (produto_id, cor_id)
 );
 
-CREATE INDEX idx_produto_cor_produto ON tb_produto_cor (produto_id);
-CREATE INDEX idx_produto_cor_cor ON tb_produto_cor (cor_id);
+CREATE INDEX IF NOT EXISTS idx_produto_cor_produto ON tb_produto_cor (produto_id);
+CREATE INDEX IF NOT EXISTS idx_produto_cor_cor ON tb_produto_cor (cor_id);
 
 -- ======================================
 -- TABELAS DE USUÁRIO E PERMISSÕES
@@ -132,7 +147,7 @@ CREATE TABLE IF NOT EXISTS tb_usuario_role (
 );
 
 -- ======================================
--- TABELA: CAMPOS DE EXIBIÇÃO PADRÃO
+-- CAMPOS DE EXIBIÇÃO PADRÃO
 -- ======================================
 CREATE TABLE IF NOT EXISTS tb_campo_exibicao_padrao (
     id BIGSERIAL PRIMARY KEY,
@@ -150,7 +165,7 @@ VALUES
 ON CONFLICT DO NOTHING;
 
 -- ======================================
--- TABELA: PRODUTO x CAMPOS DE EXIBIÇÃO PERSONALIZADOS
+-- PRODUTO x CAMPOS DE EXIBIÇÃO PERSONALIZADOS
 -- ======================================
 CREATE TABLE IF NOT EXISTS tb_produto_campo_exibicao (
     id BIGSERIAL PRIMARY KEY,
@@ -161,9 +176,65 @@ CREATE TABLE IF NOT EXISTS tb_produto_campo_exibicao (
     UNIQUE (produto_id, campo)
 );
 
-CREATE INDEX IF NOT EXISTS idx_produto_campo_exibicao_produto ON tb_produto_campo_exibicao (produto_id);
+CREATE INDEX IF NOT EXISTS idx_produto_campo_exibicao_produto
+ON tb_produto_campo_exibicao (produto_id);
+
+CREATE INDEX IF NOT EXISTS idx_usuario_email ON tb_usuario(email);
 
 -- ======================================
--- INDEX EXTRA
+-- SEED MÍNIMO
 -- ======================================
-CREATE INDEX IF NOT EXISTS idx_usuario_email ON tb_usuario(email);
+
+-- CATEGORIAS
+INSERT INTO tb_categoria (nome, ativo)
+VALUES ('Clássico', TRUE), ('Geométrico', TRUE), ('Florais', TRUE)
+ON CONFLICT DO NOTHING;
+
+-- SUBCATEGORIAS
+INSERT INTO tb_subcategoria (nome, categoria_id, ativo)
+VALUES
+ ('Coleção Tradicional', (SELECT id FROM tb_categoria WHERE nome = 'Clássico'), TRUE),
+ ('Coleção Moderna', (SELECT id FROM tb_categoria WHERE nome = 'Geométrico'), TRUE),
+ ('Coleção Romântica', (SELECT id FROM tb_categoria WHERE nome = 'Florais'), TRUE)
+ON CONFLICT DO NOTHING;
+
+-- ITENS
+INSERT INTO tb_item_categoria (nome, subcategoria_id, ativo)
+VALUES
+ ('Ladrilhos Antigos', (SELECT id FROM tb_subcategoria WHERE nome = 'Coleção Tradicional'), TRUE),
+ ('Ladrilhos Contemporâneos', (SELECT id FROM tb_subcategoria WHERE nome = 'Coleção Moderna'), TRUE),
+ ('Ladrilhos Florais', (SELECT id FROM tb_subcategoria WHERE nome = 'Coleção Romântica'), TRUE)
+ON CONFLICT DO NOTHING;
+
+-- PRODUTOS
+INSERT INTO tb_produto (codigo, nome, medidas, preco_unitario, descricao, ativo)
+VALUES
+ ('TL-001', 'Ladrilho Coliseu', '20x20', 49.90, 'Ladrilho hidráulico estilo clássico com acabamento fosco.', TRUE),
+ ('TL-002', 'Ladrilho Viena', '20x20', 54.90, 'Ladrilho com padrão geométrico sofisticado.', TRUE),
+ ('TL-003', 'Ladrilho Siena', '20x20', 59.90, 'Ladrilho floral com tons suaves e acabamento artesanal.', TRUE)
+ON CONFLICT DO NOTHING;
+
+-- PRODUTO x ITEM
+INSERT INTO tb_produto_item_categoria (produto_id, item_categoria_id)
+SELECT p.id, i.id
+FROM tb_produto p
+JOIN tb_item_categoria i
+  ON ( (p.codigo = 'TL-001' AND i.nome = 'Ladrilhos Antigos')
+    OR (p.codigo = 'TL-002' AND i.nome = 'Ladrilhos Contemporâneos')
+    OR (p.codigo = 'TL-003' AND i.nome = 'Ladrilhos Florais') )
+ON CONFLICT DO NOTHING;
+
+-- CORES (raiz)
+INSERT INTO tb_cor (nome, hex, ativo, grupo_id)
+VALUES
+ ('Branco', '#FFFFFF', TRUE, NULL),
+ ('Preto', '#000000', TRUE, NULL),
+ ('Chocolate Branco', '#EFEFE9', TRUE, NULL)
+ON CONFLICT DO NOTHING;
+
+-- SUBCORES do "Chocolate Branco" (exemplo)
+INSERT INTO tb_cor (nome, hex, ativo, grupo_id)
+VALUES
+ ('Chocolate Amargo', '#3E2723', TRUE, (SELECT id FROM tb_cor WHERE lower(nome) = lower('Chocolate Branco') AND grupo_id IS NULL)),
+ ('Chocolate Meio Amargo', '#5D4037', TRUE, (SELECT id FROM tb_cor WHERE lower(nome) = lower('Chocolate Branco') AND grupo_id IS NULL))
+ON CONFLICT DO NOTHING;

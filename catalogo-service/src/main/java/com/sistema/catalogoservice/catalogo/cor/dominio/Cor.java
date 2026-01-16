@@ -8,9 +8,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
-@Table(name = "tb_cor", uniqueConstraints = {
-        @UniqueConstraint(columnNames = "nome")
-})
+@Table(name = "tb_cor")
 @Getter
 @Setter
 @NoArgsConstructor
@@ -22,7 +20,7 @@ public class Cor {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 100)
     private String nome;
 
     @Column(length = 7)
@@ -33,15 +31,17 @@ public class Cor {
     private Cor grupo;
 
     @OneToMany(mappedBy = "grupo", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
     private List<Cor> subcores = new ArrayList<>();
 
     @Column(nullable = false)
+    @Builder.Default
     private Boolean ativo = true;
 
-    @Column(nullable = false, updatable = false)
+    @Column(name = "criado_em", nullable = false, updatable = false)
     private OffsetDateTime criadoEm;
 
-    @Column(nullable = false)
+    @Column(name = "atualizado_em")
     private OffsetDateTime atualizadoEm;
 
     @PrePersist

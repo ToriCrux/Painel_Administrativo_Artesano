@@ -1,9 +1,14 @@
 package com.sistema.catalogoservice.catalogo.cor.api.dto;
 
-import jakarta.validation.constraints.*;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
+
 import java.util.List;
 
 public record CorRequest(
+        Long id, // ✅ opcional (para merge). No print pode vir null.
+
         @NotBlank @Size(max = 60)
         String nome,
 
@@ -12,6 +17,5 @@ public record CorRequest(
 
         Boolean ativo,
 
-        // ✅ Permite criar subcores aninhadas
         List<CorRequest> subcores
 ) {}

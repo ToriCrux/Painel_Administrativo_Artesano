@@ -13,12 +13,11 @@ public record ProdutoRequest(
         String nome,
 
         @NotNull
-        List<CategoriaHierarquiaRequest> categorias, // ✅ nova estrutura hierárquica
+        List<CategoriaHierarquiaRequest> categorias, // ✅ estrutura hierárquica
 
-        @NotBlank
-        String corNome,
-
-        List<String> subcorNomes,
+        @NotNull
+        @Size(min = 1, message = "Informe pelo menos 1 grupo de cor")
+        List<CorGrupoRequest> cores, // ✅ agora suporta N grupos e N subcores
 
         @Size(max = 120)
         String medidas,
