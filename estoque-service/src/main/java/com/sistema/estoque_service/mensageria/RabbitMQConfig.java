@@ -1,9 +1,9 @@
 package com.sistema.estoque_service.mensageria;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.config.SimpleRabbitListenerContainerFactory;
+import org.springframework.amqp.rabbit.connection.ConnectionFactory;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,17 +11,15 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class RabbitMQConfig {
 
-	// 🔸 EXISTENTE — eventos de produtos
+	// 🔸 EVENTOS DE PRODUTOS
 	public static final String PRODUTO_EXCHANGE = "produto.exchange";
 	public static final String PRODUTO_CRIADO_ROUTING_KEY = "produto.criado";
 	public static final String PRODUTO_CRIADO_QUEUE = "estoque.produto-criado.q";
 
-	// 🔸 NOVO — eventos de pedidos finalizados
+	// 🔸 EVENTOS DE PEDIDOS FINALIZADOS
 	public static final String PEDIDO_EXCHANGE = "pedido.exchange";
 	public static final String PEDIDO_FINALIZADO_ROUTING_KEY = "pedido.finalizado";
 	public static final String PEDIDO_FINALIZADO_QUEUE = "estoque.pedido-finalizado.q";
-
-	// ========== CONFIGURAÇÕES EXISTENTES ==========
 
 	@Bean
 	public TopicExchange produtoExchange() {
@@ -41,8 +39,6 @@ public class RabbitMQConfig {
 				.with(PRODUTO_CRIADO_ROUTING_KEY);
 	}
 
-	// ========== NOVAS CONFIGURAÇÕES PARA PEDIDOS ==========
-
 	@Bean
 	public TopicExchange pedidoExchange() {
 		return new TopicExchange(PEDIDO_EXCHANGE);
@@ -61,9 +57,33 @@ public class RabbitMQConfig {
 				.with(PEDIDO_FINALIZADO_ROUTING_KEY);
 	}
 
-	// Conversor JSON (usado para ambos os eventos)
+	// ✅ Conversor JSON
 	@Bean
 	public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
 		return new Jackson2JsonMessageConverter();
+	}
+
+	// ✅ GARANTE que @RabbitListener vai usar JSON converter
+	@Bean
+	public SimpleRabbitListenerContainerFactory rabbitListenerContainerFactory(
+			ConnectionFactory connectionFactory,
+			Jackson2JsonMessageConverter converter
+	) {
+		SimpleRabbitListenerContainerFactory factory = new SimpleRabbitListenerContainerFactory();
+		factory.setConnectionFactory(connectionFactory);
+		factory.setMessageConverter(converter);
+
+		// opcional: melhora resiliência
+		factory.setDefaultRequeueRejected(false); // não ficar re-enfileirando sem parar em erro de conversão
+
+		return factory;
+	}
+
+	// (Opcional) RabbitTemplate também com converter
+	@Bean
+	public RabbitTemplate rabbitTemplate(ConnectionFactory connectionFactory, Jackson2JsonMessageConverter converter) {
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		template.setMessageConverter(converter);
+		return template;
 	}
 }

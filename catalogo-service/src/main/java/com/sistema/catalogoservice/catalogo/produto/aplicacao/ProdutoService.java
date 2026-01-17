@@ -10,6 +10,7 @@ import com.sistema.catalogoservice.catalogo.produto.infra.ProdutoRepository;
 import com.sistema.catalogoservice.catalogo.produtoimagem.infra.ProdutoImagemRepository;
 import com.sistema.catalogoservice.config.exception.ConflictException;
 import com.sistema.catalogoservice.config.exception.NotFoundException;
+import com.sistema.catalogoservice.mensageria.ProdutoCriadoPublisher;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,9 @@ public class ProdutoService {
     private final ItemCategoriaRepository itemCategoriaRepository;
     private final CorRepository corRepository;
     private final ProdutoImagemRepository produtoImagemRepository;
+
+    // ✅ NOVO: publisher do evento para o estoque
+    private final ProdutoCriadoPublisher produtoCriadoPublisher;
 
     // ======================================================
     // ==================== LISTAGEM =========================
@@ -75,6 +79,10 @@ public class ProdutoService {
                 .build();
 
         Produto salvo = produtoRepository.save(produto);
+
+        // ✅ AQUI: dispara o evento (só vai publicar AFTER_COMMIT)
+        produtoCriadoPublisher.publicarDepoisDoCommit(salvo);
+
         return toResponse(salvo);
     }
 
@@ -101,7 +109,6 @@ public class ProdutoService {
         produto.setAtivo(request.ativo());
         produto.setDescricao(request.descricao());
 
-        // ✅ agora resolve múltiplas cores e subcores por grupo
         produto.setCores(resolveCoresPorGrupos(request.cores()));
 
         if (request.categorias() != null && !request.categorias().isEmpty()) {
@@ -188,7 +195,6 @@ public class ProdutoService {
                 })
                 .toList();
 
-        // ✅ Agrupa cores em hierarquia (grupo + subcores)
         List<CorHierarquiaResponse> coresHierarquia = produto.getCores().stream()
                 .filter(c -> c.getGrupo() == null)
                 .map(grupo -> {
@@ -217,12 +223,6 @@ public class ProdutoService {
         );
     }
 
-    /**
-     * ✅ Resolve N grupos de cor, cada um com N subcores.
-     * - Adiciona o grupo (somente se for grupo: grupo == null)
-     * - Adiciona subcores somente se pertencerem ao grupo
-     * - Valida subcores faltantes
-     */
     private Set<Cor> resolveCoresPorGrupos(List<CorGrupoRequest> gruposRequest) {
         if (gruposRequest == null || gruposRequest.isEmpty()) return Collections.emptySet();
 
@@ -231,7 +231,6 @@ public class ProdutoService {
         for (CorGrupoRequest grpReq : gruposRequest) {
             if (grpReq == null || grpReq.corNome() == null || grpReq.corNome().isBlank()) continue;
 
-            // ✅ garante que estamos pegando um "grupo" de cor (grupo_id null)
             Cor grupo = corRepository.findByGrupoIsNullAndNomeIgnoreCase(grpReq.corNome())
                     .orElseThrow(() -> new NotFoundException("Cor/grupo não encontrado: " + grpReq.corNome()));
 
@@ -240,7 +239,6 @@ public class ProdutoService {
             List<String> subNomes = grpReq.subcorNomes();
             if (subNomes == null || subNomes.isEmpty()) continue;
 
-            // ✅ normaliza para o formato esperado pelo repository (nomesLower)
             List<String> nomesLower = subNomes.stream()
                     .filter(Objects::nonNull)
                     .map(String::trim)
@@ -248,10 +246,8 @@ public class ProdutoService {
                     .map(String::toLowerCase)
                     .toList();
 
-            // ✅ Busca somente subcores daquele grupo (sem varrer findAll)
             List<Cor> subcores = corRepository.findSubcoresDoGrupoPorNomes(grupo.getId(), nomesLower);
 
-            // valida se todas as subcores pedidas foram encontradas
             Set<String> encontradasLower = subcores.stream()
                     .map(c -> c.getNome().toLowerCase())
                     .collect(Collectors.toSet());

@@ -99,6 +99,16 @@ public class EstoqueService {
     }
 
     // ========================
+    // ✅ NOVO: Criar estoque via mensageria (idempotente)
+    // - Se já existe, não cria de novo (evita unique constraint)
+    // - Se não existe, cria zerado e registra movimentação
+    // ========================
+    public Estoque criarEstoqueParaProdutoSeNaoExistir(Long produtoId, String produtoNome, String produtoCodigo) {
+        return repository.findByProdutoId(produtoId)
+                .orElseGet(() -> criarEstoqueParaProduto(produtoId, produtoNome, produtoCodigo));
+    }
+
+    // ========================
     // 🔹 Criar estoque (retrocompatível)
     // ========================
     public Estoque criarEstoqueParaProduto(Long produtoId) {
@@ -106,7 +116,7 @@ public class EstoqueService {
     }
 
     // ========================
-    // 🔹 Criar estoque zerado se não existir
+    // 🔹 Criar estoque zerado se não existir (manual/endpoint)
     // ========================
     public Estoque criarEstoqueZeradoSeNaoExistir(Long produtoId) {
         var existente = repository.findByProdutoId(produtoId);
@@ -152,7 +162,7 @@ public class EstoqueService {
     }
 
     // ========================
-    // 🔹 Registrar movimentação
+    // 🔹 Registrar movimentação (padrão)
     // ========================
     private void registrarMovimentacao(Long produtoId, String tipo, Long quantidade,
                                        Long saldoAnterior, Long saldoNovo) {
@@ -168,8 +178,8 @@ public class EstoqueService {
     }
 
     // ========================
-// 🔹 Registrar saída por pedido (tipo CLIENTE)
-// ========================
+    // 🔹 Registrar saída por pedido (tipo CLIENTE)
+    // ========================
     public void registrarSaidaPorPedido(Long produtoId, Long qtd, String codigoPedido, String nomeCliente) {
         var e = buscarPorProduto(produtoId);
         Long saldoAnterior = e.getSaldo();

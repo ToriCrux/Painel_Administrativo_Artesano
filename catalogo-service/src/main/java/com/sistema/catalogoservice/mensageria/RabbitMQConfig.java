@@ -1,9 +1,7 @@
 package com.sistema.catalogoservice.mensageria;
 
-import org.springframework.amqp.core.Binding;
-import org.springframework.amqp.core.BindingBuilder;
-import org.springframework.amqp.core.Queue;
-import org.springframework.amqp.core.TopicExchange;
+import org.springframework.amqp.core.*;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.amqp.support.converter.Jackson2JsonMessageConverter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -22,8 +20,6 @@ public class RabbitMQConfig {
 
 	@Bean
 	public Queue produtoCriadoQueue() {
-		// a fila "oficial" pode ser declarada no serviço de estoque também;
-		// aqui tanto faz, desde que o nome bata nos dois lados
 		return new Queue(PRODUTO_CRIADO_QUEUE, true);
 	}
 
@@ -38,5 +34,16 @@ public class RabbitMQConfig {
 	@Bean
 	public Jackson2JsonMessageConverter jackson2JsonMessageConverter() {
 		return new Jackson2JsonMessageConverter();
+	}
+
+	// ✅ IMPORTANTE: garante que o convertAndSend envie JSON
+	@Bean
+	public RabbitTemplate rabbitTemplate(
+			org.springframework.amqp.rabbit.connection.ConnectionFactory connectionFactory,
+			Jackson2JsonMessageConverter converter
+	) {
+		RabbitTemplate template = new RabbitTemplate(connectionFactory);
+		template.setMessageConverter(converter);
+		return template;
 	}
 }

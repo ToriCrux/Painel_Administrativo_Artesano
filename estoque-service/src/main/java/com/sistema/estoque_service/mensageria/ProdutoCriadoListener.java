@@ -5,6 +5,7 @@ import com.sistema.estoque_service.mensageria.evento.ProdutoCriadoEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.annotation.RabbitListener;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 @Slf4j
@@ -20,17 +21,22 @@ public class ProdutoCriadoListener {
 				event.produtoId(), event.codigo(), event.nome());
 
 		try {
-			// ✅ Agora o estoque é criado com nome e código do produto
-			estoqueService.criarEstoqueParaProduto(
+			estoqueService.criarEstoqueParaProdutoSeNaoExistir(
 					event.produtoId(),
 					event.nome(),
 					event.codigo()
 			);
 
-			log.info("✅ Estoque criado com sucesso para produtoId={}", event.produtoId());
+			log.info("✅ Estoque OK para produtoId={} (criado ou já existia)", event.produtoId());
+
+		} catch (DataIntegrityViolationException e) {
+			// fallback caso exista corrida/duplicidade
+			log.warn("⚠️ Estoque já existe para produtoId={} (constraint). Ignorando.", event.produtoId());
 
 		} catch (Exception e) {
-			log.error("❌ Erro ao criar estoque para produtoId={}: {}", event.produtoId(), e.getMessage(), e);
+			log.error("❌ Erro ao processar ProdutoCriadoEvent produtoId={}: {}",
+					event.produtoId(), e.getMessage(), e);
+			throw e; // opcional: deixar falhar p/ retry/DLQ conforme sua config
 		}
 	}
 }
