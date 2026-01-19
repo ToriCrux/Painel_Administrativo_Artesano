@@ -27,9 +27,7 @@ public class ProdutoController {
             Pageable pageable) {
 
         Page<ProdutoResponse> page = produtoService.listar(nome, pageable);
-
         if (page.isEmpty()) return ResponseEntity.noContent().build();
-
         return ResponseEntity.ok(page);
     }
 
@@ -37,7 +35,6 @@ public class ProdutoController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ProdutoResponse> listarProdutoPorId(@PathVariable Long id) {
         ProdutoResponse produto = produtoService.listarPorId(id);
-        if (produto == null) return ResponseEntity.notFound().build();
         return ResponseEntity.ok(produto);
     }
 
@@ -49,19 +46,23 @@ public class ProdutoController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public ResponseEntity<ProdutoResponse> atualizarProduto(@PathVariable Long id, @RequestBody @Valid ProdutoRequest produtoRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(produtoService.atualizar(id, produtoRequest));
+    public ResponseEntity<ProdutoResponse> atualizarProduto(
+            @PathVariable Long id,
+            @RequestBody @Valid ProdutoRequest produtoRequest
+    ) {
+        return ResponseEntity.ok(produtoService.atualizar(id, produtoRequest));
     }
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     public ResponseEntity<ProdutoResponse> desativarProduto(@PathVariable Long id) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(produtoService.desativar(id));
+        return ResponseEntity.ok(produtoService.desativar(id));
     }
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMINISTRADOR')")
-    public void deletar(@PathVariable Long id) {
+    public ResponseEntity<Void> deletar(@PathVariable Long id) {
         produtoService.deletar(id);
+        return ResponseEntity.noContent().build();
     }
 }

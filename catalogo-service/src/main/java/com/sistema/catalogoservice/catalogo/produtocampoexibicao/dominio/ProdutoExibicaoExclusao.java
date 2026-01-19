@@ -7,15 +7,15 @@ import java.time.OffsetDateTime;
 
 @Entity
 @Table(
-        name = "tb_produto_campo_exibicao",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"produto_id", "campo"})
+        name = "tb_produto_exibicao_exclusao",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"produto_id", "tipo", "ref_id", "chave"})
 )
 @Getter
 @Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-public class ProdutoCampoExibicao {
+public class ProdutoExibicaoExclusao {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -24,11 +24,15 @@ public class ProdutoCampoExibicao {
     @Column(name = "produto_id", nullable = false)
     private Long produtoId;
 
-    @Column(nullable = false, length = 50)
-    private String campo;
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 30)
+    private TipoExclusaoExibicao tipo;
 
-    @Column(nullable = false)
-    private Boolean visivel = true;
+    @Column(name = "ref_id")
+    private Long refId;
+
+    @Column(length = 120)
+    private String chave;
 
     @Column(nullable = false)
     private OffsetDateTime atualizadoEm;

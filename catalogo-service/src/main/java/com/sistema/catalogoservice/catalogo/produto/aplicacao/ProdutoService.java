@@ -29,14 +29,11 @@ public class ProdutoService {
     private final ItemCategoriaRepository itemCategoriaRepository;
     private final CorRepository corRepository;
     private final ProdutoImagemRepository produtoImagemRepository;
-
-    // ✅ NOVO: publisher do evento para o estoque
     private final ProdutoCriadoPublisher produtoCriadoPublisher;
 
     // ======================================================
-    // ==================== LISTAGEM =========================
+    // LISTAGEM
     // ======================================================
-
     @Transactional(readOnly = true)
     public Page<ProdutoResponse> listar(String nome, Pageable pageable) {
         var page = (nome != null && !nome.isBlank())
@@ -54,42 +51,35 @@ public class ProdutoService {
     }
 
     // ======================================================
-    // ==================== CRIAÇÃO ==========================
+    // CRIAÇÃO
     // ======================================================
-
     @Transactional
     public ProdutoResponse salvar(ProdutoRequest request) {
         produtoRepository.findByCodigoIgnoreCase(request.codigo())
-                .ifPresent(p -> {
-                    throw new ConflictException("Código de produto já existe!");
-                });
+                .ifPresent(p -> { throw new ConflictException("Código de produto já existe!"); });
 
-        Set<ItemCategoria> itens = resolveItensCategoria(request);
-        Set<Cor> cores = resolveCoresPorGrupos(request.cores());
+        Set<ItemCategoria> itens = resolveItensCategoria(request);       // ← usa request.categorias()
+        Set<Cor> cores = resolveCoresPorGrupos(request.cores());        // ← pode ser null
 
         Produto produto = Produto.builder()
                 .codigo(request.codigo())
                 .nome(request.nome())
                 .itensCategoria(itens)
                 .cores(cores)
-                .medidas(request.medidas())
+                .detalhesTecnicos(sanitizeDetalhes(request.detalhesTecnicos()))
                 .precoUnitario(request.precoUnitario())
                 .ativo(request.ativo())
                 .descricao(request.descricao())
                 .build();
 
         Produto salvo = produtoRepository.save(produto);
-
-        // ✅ AQUI: dispara o evento (só vai publicar AFTER_COMMIT)
         produtoCriadoPublisher.publicarDepoisDoCommit(salvo);
-
         return toResponse(salvo);
     }
 
     // ======================================================
-    // ==================== ATUALIZAÇÃO ======================
+    // ATUALIZAÇÃO
     // ======================================================
-
     @Transactional
     public ProdutoResponse atualizar(Long id, ProdutoRequest request) {
         Produto produto = produtoRepository.findById(id)
@@ -97,34 +87,47 @@ public class ProdutoService {
 
         if (!produto.getCodigo().equalsIgnoreCase(request.codigo())) {
             produtoRepository.findByCodigoIgnoreCase(request.codigo())
-                    .ifPresent(p -> {
-                        throw new ConflictException("Código já existe");
-                    });
+                    .ifPresent(p -> { throw new ConflictException("Código já existe"); });
         }
 
         produto.setCodigo(request.codigo());
         produto.setNome(request.nome());
-        produto.setMedidas(request.medidas());
         produto.setPrecoUnitario(request.precoUnitario());
         produto.setAtivo(request.ativo());
         produto.setDescricao(request.descricao());
 
-        produto.setCores(resolveCoresPorGrupos(request.cores()));
-
-        if (request.categorias() != null && !request.categorias().isEmpty()) {
-            produto.getItensCategoria().clear();
-            Set<ItemCategoria> novosItens = resolveItensCategoria(request);
-            produto.getItensCategoria().addAll(novosItens);
+        // ✅ Detalhes técnicos:
+        // - null => não altera
+        // - {} => limpa
+        if (request.detalhesTecnicos() != null) {
+            produto.getDetalhesTecnicos().clear();
+            produto.getDetalhesTecnicos().putAll(sanitizeDetalhes(request.detalhesTecnicos()));
         }
+
+        // ✅ CORES:
+        // - null => não altera
+        // - []   => limpa
+        // - [...]=> substitui
+        if (request.cores() != null) {
+            Set<Cor> novasCores = resolveCoresPorGrupos(request.cores()); // [] -> emptySet
+            produto.getCores().clear();
+            produto.getCores().addAll(novasCores);
+        }
+
+        // ✅ CATEGORIAS:
+        // Como seu DTO tem @NotNull, aqui SEMPRE vem lista ([]) ou ([...]).
+        // [] => limpa / [...] => substitui
+        Set<ItemCategoria> novosItens = resolveItensCategoria(request); // se vier [], retorna vazio
+        produto.getItensCategoria().clear();
+        produto.getItensCategoria().addAll(novosItens);
 
         Produto atualizado = produtoRepository.save(produto);
         return toResponse(atualizado);
     }
 
     // ======================================================
-    // ==================== DESATIVAR ========================
+    // DESATIVAR / DELETAR
     // ======================================================
-
     @Transactional
     public ProdutoResponse desativar(Long id) {
         Produto produto = produtoRepository.findById(id)
@@ -132,10 +135,6 @@ public class ProdutoService {
         produto.setAtivo(false);
         return toResponse(produtoRepository.save(produto));
     }
-
-    // ======================================================
-    // ==================== DELETAR ==========================
-    // ======================================================
 
     @Transactional
     public void deletar(Long id) {
@@ -145,15 +144,31 @@ public class ProdutoService {
     }
 
     // ======================================================
-    // ==================== HELPERS ==========================
+    // HELPERS
     // ======================================================
-
     private Set<ItemCategoria> resolveItensCategoria(ProdutoRequest request) {
+        // ✅ Se vier vazio, retorna vazio => "limpa"
+        if (request.categorias() == null || request.categorias().isEmpty()) {
+            return Collections.emptySet();
+        }
+
         Set<ItemCategoria> itens = new HashSet<>();
 
         for (var categoria : request.categorias()) {
-            for (var sub : categoria.subcategorias()) {
-                for (var itemNome : sub.itens()) {
+            if (categoria == null) continue;
+
+            var subcats = categoria.subcategorias();
+            if (subcats == null) continue;
+
+            for (var sub : subcats) {
+                if (sub == null) continue;
+
+                var itensNomes = sub.itens();
+                if (itensNomes == null) continue;
+
+                for (var itemNome : itensNomes) {
+                    if (itemNome == null || itemNome.isBlank()) continue;
+
                     ItemCategoria item = itemCategoriaRepository.findByHierarquia(
                             categoria.categoriaNome(),
                             sub.subcategoriaNome(),
@@ -162,11 +177,70 @@ public class ProdutoService {
                             "Categoria/Subcategoria/Item não encontrados: "
                                     + categoria.categoriaNome() + " / " + sub.subcategoriaNome() + " / " + itemNome
                     ));
+
                     itens.add(item);
                 }
             }
         }
+
         return itens;
+    }
+
+    private Set<Cor> resolveCoresPorGrupos(List<CorGrupoRequest> gruposRequest) {
+        if (gruposRequest == null || gruposRequest.isEmpty()) return Collections.emptySet();
+
+        Set<Cor> resultado = new HashSet<>();
+
+        for (CorGrupoRequest grpReq : gruposRequest) {
+            if (grpReq == null || grpReq.corNome() == null || grpReq.corNome().isBlank()) continue;
+
+            Cor grupo = corRepository.findByGrupoIsNullAndNomeIgnoreCase(grpReq.corNome())
+                    .orElseThrow(() -> new NotFoundException("Cor/grupo não encontrado: " + grpReq.corNome()));
+
+            resultado.add(grupo);
+
+            List<String> subNomes = grpReq.subcorNomes();
+            if (subNomes == null || subNomes.isEmpty()) continue;
+
+            List<String> nomesLower = subNomes.stream()
+                    .filter(Objects::nonNull)
+                    .map(String::trim)
+                    .filter(s -> !s.isBlank())
+                    .map(String::toLowerCase)
+                    .toList();
+
+            List<Cor> subcores = corRepository.findSubcoresDoGrupoPorNomes(grupo.getId(), nomesLower);
+
+            Set<String> encontradasLower = subcores.stream()
+                    .map(c -> c.getNome().toLowerCase())
+                    .collect(Collectors.toSet());
+
+            List<String> faltando = subNomes.stream()
+                    .filter(n -> n != null && !n.isBlank())
+                    .filter(n -> !encontradasLower.contains(n.trim().toLowerCase()))
+                    .toList();
+
+            if (!faltando.isEmpty()) {
+                throw new NotFoundException("Subcores não encontradas (ou não pertencem ao grupo '"
+                        + grupo.getNome() + "'): " + faltando);
+            }
+
+            resultado.addAll(subcores);
+        }
+
+        return resultado;
+    }
+
+    private Map<String, String> sanitizeDetalhes(Map<String, String> incoming) {
+        if (incoming == null || incoming.isEmpty()) return new LinkedHashMap<>();
+
+        LinkedHashMap<String, String> out = new LinkedHashMap<>();
+        incoming.forEach((k, v) -> {
+            String key = (k == null) ? "" : k.trim();
+            String val = (v == null) ? "" : v.trim();
+            if (!key.isBlank()) out.put(key, val);
+        });
+        return out;
     }
 
     private ProdutoResponse toResponse(Produto produto) {
@@ -213,7 +287,7 @@ public class ProdutoService {
                 produto.getNome(),
                 categoriasResponse,
                 coresHierarquia,
-                produto.getMedidas(),
+                produto.getDetalhesTecnicos() == null ? Map.of() : produto.getDetalhesTecnicos(),
                 produto.getPrecoUnitario(),
                 produto.getAtivo(),
                 principalUrl,
@@ -221,51 +295,6 @@ public class ProdutoService {
                 produto.getCriadoEm(),
                 produto.getAtualizadoEm()
         );
-    }
-
-    private Set<Cor> resolveCoresPorGrupos(List<CorGrupoRequest> gruposRequest) {
-        if (gruposRequest == null || gruposRequest.isEmpty()) return Collections.emptySet();
-
-        Set<Cor> resultado = new HashSet<>();
-
-        for (CorGrupoRequest grpReq : gruposRequest) {
-            if (grpReq == null || grpReq.corNome() == null || grpReq.corNome().isBlank()) continue;
-
-            Cor grupo = corRepository.findByGrupoIsNullAndNomeIgnoreCase(grpReq.corNome())
-                    .orElseThrow(() -> new NotFoundException("Cor/grupo não encontrado: " + grpReq.corNome()));
-
-            resultado.add(grupo);
-
-            List<String> subNomes = grpReq.subcorNomes();
-            if (subNomes == null || subNomes.isEmpty()) continue;
-
-            List<String> nomesLower = subNomes.stream()
-                    .filter(Objects::nonNull)
-                    .map(String::trim)
-                    .filter(s -> !s.isBlank())
-                    .map(String::toLowerCase)
-                    .toList();
-
-            List<Cor> subcores = corRepository.findSubcoresDoGrupoPorNomes(grupo.getId(), nomesLower);
-
-            Set<String> encontradasLower = subcores.stream()
-                    .map(c -> c.getNome().toLowerCase())
-                    .collect(Collectors.toSet());
-
-            List<String> faltando = subNomes.stream()
-                    .filter(n -> n != null && !n.isBlank())
-                    .filter(n -> !encontradasLower.contains(n.trim().toLowerCase()))
-                    .toList();
-
-            if (!faltando.isEmpty()) {
-                throw new NotFoundException("Subcores não encontradas (ou não pertencem ao grupo '"
-                        + grupo.getNome() + "'): " + faltando);
-            }
-
-            resultado.addAll(subcores);
-        }
-
-        return resultado;
     }
 
     private String buildImagemPrincipalUrl(Long produtoId) {

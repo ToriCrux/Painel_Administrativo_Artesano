@@ -4,11 +4,12 @@ import com.sistema.catalogoservice.catalogo.categoria.dominio.ItemCategoria;
 import com.sistema.catalogoservice.catalogo.cor.dominio.Cor;
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
-import java.util.HashSet;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Table(name = "tb_produto")
@@ -45,10 +46,15 @@ public class Produto {
             joinColumns = @JoinColumn(name = "produto_id"),
             inverseJoinColumns = @JoinColumn(name = "cor_id")
     )
+    @Builder.Default
     private Set<Cor> cores = new HashSet<>();
 
-    @Column(length = 120)
-    private String medidas;
+
+    // ✅ NOVO: Detalhes técnicos flexíveis (JSONB)
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "detalhes_tecnicos", columnDefinition = "jsonb")
+    @Builder.Default
+    private Map<String, String> detalhesTecnicos = new LinkedHashMap<>();
 
     @Column(nullable = false, precision = 19, scale = 2)
     private BigDecimal precoUnitario;

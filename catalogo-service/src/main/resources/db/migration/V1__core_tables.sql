@@ -1,3 +1,9 @@
+-- =====================================================================
+-- SCRIPT COMPLETO (DO ZERO) - CATEGORIAS / CORES / PRODUTOS
+-- + CAMPOS DE EXIBICAO (PADRAO + OVERRIDES)
+-- + EXCLUSOES DE EXIBICAO POR PRODUTO (NOVO)
+-- =====================================================================
+
 -- ======================================
 -- TABELA: CATEGORIA
 -- ======================================
@@ -48,7 +54,7 @@ CREATE INDEX IF NOT EXISTS idx_item_subcategoria_id
 ON tb_item_categoria (subcategoria_id);
 
 -- ======================================
--- TABELA: COR (✅ CORRIGIDA)
+-- TABELA: COR
 -- ======================================
 CREATE TABLE IF NOT EXISTS tb_cor (
     id BIGSERIAL PRIMARY KEY,
@@ -66,24 +72,26 @@ CREATE TABLE IF NOT EXISTS tb_cor (
 CREATE INDEX IF NOT EXISTS idx_cor_grupo_id ON tb_cor(grupo_id);
 CREATE INDEX IF NOT EXISTS idx_cor_nome_lower ON tb_cor(lower(nome));
 
--- ✅ raiz: nome único (case-insensitive) quando grupo_id IS NULL
+-- raiz: nome unico (case-insensitive) quando grupo_id IS NULL
 CREATE UNIQUE INDEX IF NOT EXISTS ux_cor_root_nome
 ON tb_cor (lower(nome))
 WHERE grupo_id IS NULL;
 
--- ✅ subcores: nome único por grupo (case-insensitive) quando grupo_id IS NOT NULL
+-- subcores: nome unico por grupo (case-insensitive) quando grupo_id IS NOT NULL
 CREATE UNIQUE INDEX IF NOT EXISTS ux_cor_sub_nome_por_grupo
 ON tb_cor (grupo_id, lower(nome))
 WHERE grupo_id IS NOT NULL;
 
 -- ======================================
--- TABELA: PRODUTO
+-- TABELA: PRODUTO (COM DETALHES TECNICOS FLEXIVEIS)
 -- ======================================
 CREATE TABLE IF NOT EXISTS tb_produto (
     id BIGSERIAL PRIMARY KEY,
     codigo VARCHAR(60) NOT NULL,
     nome VARCHAR(120) NOT NULL,
-    medidas VARCHAR(120),
+
+    detalhes_tecnicos JSONB NOT NULL DEFAULT '{}'::jsonb,
+
     preco_unitario NUMERIC(19,2) NOT NULL CHECK (preco_unitario >= 0),
     descricao TEXT,
     ativo BOOLEAN NOT NULL DEFAULT TRUE,
@@ -93,6 +101,10 @@ CREATE TABLE IF NOT EXISTS tb_produto (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_produto_codigo_lower ON tb_produto (LOWER(codigo));
 CREATE INDEX IF NOT EXISTS idx_produto_nome ON tb_produto (nome);
+
+-- (Opcional) GIN pro JSON
+-- CREATE INDEX IF NOT EXISTS idx_produto_detalhes_tecnicos_gin
+-- ON tb_produto USING GIN (detalhes_tecnicos);
 
 -- ======================================
 -- PRODUTO x ITEM_CATEGORIA (ManyToMany)
@@ -119,7 +131,7 @@ CREATE INDEX IF NOT EXISTS idx_produto_cor_produto ON tb_produto_cor (produto_id
 CREATE INDEX IF NOT EXISTS idx_produto_cor_cor ON tb_produto_cor (cor_id);
 
 -- ======================================
--- TABELAS DE USUÁRIO E PERMISSÕES
+-- TABELAS DE USUARIO E PERMISSOES
 -- ======================================
 CREATE TABLE IF NOT EXISTS tb_usuario (
     id BIGSERIAL PRIMARY KEY,
@@ -132,6 +144,7 @@ CREATE TABLE IF NOT EXISTS tb_usuario (
 );
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_usuario_email_lower ON tb_usuario (LOWER(email));
+CREATE INDEX IF NOT EXISTS idx_usuario_email ON tb_usuario(email);
 
 CREATE TABLE IF NOT EXISTS tb_role (
     id BIGSERIAL PRIMARY KEY,
@@ -147,7 +160,8 @@ CREATE TABLE IF NOT EXISTS tb_usuario_role (
 );
 
 -- ======================================
--- CAMPOS DE EXIBIÇÃO PADRÃO
+-- CAMPOS DE EXIBICAO PADRAO
+-- (DEFAULT = tudo visivel. Voce pode ir adicionando mais campos aqui)
 -- ======================================
 CREATE TABLE IF NOT EXISTS tb_campo_exibicao_padrao (
     id BIGSERIAL PRIMARY KEY,
@@ -161,11 +175,14 @@ VALUES
     ('nome', true),
     ('descricao', true),
     ('precoUnitario', true),
-    ('ativo', true)
+    ('ativo', true),
+    ('detalhesTecnicos', true),
+    ('categorias', true),
+    ('cores', true)
 ON CONFLICT DO NOTHING;
 
 -- ======================================
--- PRODUTO x CAMPOS DE EXIBIÇÃO PERSONALIZADOS
+-- PRODUTO x CAMPOS DE EXIBICAO PERSONALIZADOS (OVERRIDES)
 -- ======================================
 CREATE TABLE IF NOT EXISTS tb_produto_campo_exibicao (
     id BIGSERIAL PRIMARY KEY,
@@ -179,10 +196,32 @@ CREATE TABLE IF NOT EXISTS tb_produto_campo_exibicao (
 CREATE INDEX IF NOT EXISTS idx_produto_campo_exibicao_produto
 ON tb_produto_campo_exibicao (produto_id);
 
-CREATE INDEX IF NOT EXISTS idx_usuario_email ON tb_usuario(email);
+-- ======================================
+-- ✅ NOVO: EXCLUSOES DE EXIBICAO POR PRODUTO
+-- (A: default exibe tudo, e voce salva so o que quer esconder)
+-- tipo:
+--   CATEGORIA, SUBCATEGORIA, ITEM, COR_GRUPO, SUBCOR, DETALHE_CHAVE
+-- Para DETALHE_CHAVE usa "chave"
+-- Para os demais usa "ref_id"
+-- ======================================
+CREATE TABLE IF NOT EXISTS tb_produto_exibicao_exclusao (
+    id BIGSERIAL PRIMARY KEY,
+    produto_id BIGINT NOT NULL REFERENCES tb_produto(id) ON DELETE CASCADE,
+    tipo VARCHAR(30) NOT NULL,
+    ref_id BIGINT NULL,
+    chave VARCHAR(120) NULL,
+    atualizado_em TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+-- Unicidade por produto + tipo + referencia/chave
+CREATE UNIQUE INDEX IF NOT EXISTS uq_produto_exibicao_exclusao
+ON tb_produto_exibicao_exclusao (produto_id, tipo, ref_id, chave);
+
+CREATE INDEX IF NOT EXISTS idx_produto_exibicao_exclusao_produto
+ON tb_produto_exibicao_exclusao (produto_id);
 
 -- ======================================
--- SEED MÍNIMO
+-- SEED MINIMO
 -- ======================================
 
 -- CATEGORIAS
@@ -206,12 +245,12 @@ VALUES
  ('Ladrilhos Florais', (SELECT id FROM tb_subcategoria WHERE nome = 'Coleção Romântica'), TRUE)
 ON CONFLICT DO NOTHING;
 
--- PRODUTOS
-INSERT INTO tb_produto (codigo, nome, medidas, preco_unitario, descricao, ativo)
+-- PRODUTOS (detalhes_tecnicos)
+INSERT INTO tb_produto (codigo, nome, detalhes_tecnicos, preco_unitario, descricao, ativo)
 VALUES
- ('TL-001', 'Ladrilho Coliseu', '20x20', 49.90, 'Ladrilho hidráulico estilo clássico com acabamento fosco.', TRUE),
- ('TL-002', 'Ladrilho Viena', '20x20', 54.90, 'Ladrilho com padrão geométrico sofisticado.', TRUE),
- ('TL-003', 'Ladrilho Siena', '20x20', 59.90, 'Ladrilho floral com tons suaves e acabamento artesanal.', TRUE)
+ ('TL-001', 'Ladrilho Coliseu', '{"medidas":"20x20","acabamento":"fosco"}'::jsonb, 49.90, 'Ladrilho hidráulico estilo clássico com acabamento fosco.', TRUE),
+ ('TL-002', 'Ladrilho Viena',   '{"medidas":"20x20","espessura":"20mm"}'::jsonb, 54.90, 'Ladrilho com padrão geométrico sofisticado.', TRUE),
+ ('TL-003', 'Ladrilho Siena',   '{"medidas":"20x20"}'::jsonb, 59.90, 'Ladrilho floral com tons suaves e acabamento artesanal.', TRUE)
 ON CONFLICT DO NOTHING;
 
 -- PRODUTO x ITEM
@@ -232,9 +271,40 @@ VALUES
  ('Chocolate Branco', '#EFEFE9', TRUE, NULL)
 ON CONFLICT DO NOTHING;
 
--- SUBCORES do "Chocolate Branco" (exemplo)
+-- SUBCORES do "Chocolate Branco"
 INSERT INTO tb_cor (nome, hex, ativo, grupo_id)
 VALUES
- ('Chocolate Amargo', '#3E2723', TRUE, (SELECT id FROM tb_cor WHERE lower(nome) = lower('Chocolate Branco') AND grupo_id IS NULL)),
- ('Chocolate Meio Amargo', '#5D4037', TRUE, (SELECT id FROM tb_cor WHERE lower(nome) = lower('Chocolate Branco') AND grupo_id IS NULL))
+ ('Chocolate Amargo', '#3E2723', TRUE,
+  (SELECT id FROM tb_cor WHERE lower(nome) = lower('Chocolate Branco') AND grupo_id IS NULL)),
+ ('Chocolate Meio Amargo', '#5D4037', TRUE,
+  (SELECT id FROM tb_cor WHERE lower(nome) = lower('Chocolate Branco') AND grupo_id IS NULL))
+ON CONFLICT DO NOTHING;
+
+-- PRODUTO x COR (exemplo)
+INSERT INTO tb_produto_cor (produto_id, cor_id)
+SELECT p.id, c.id
+FROM tb_produto p
+JOIN tb_cor c ON (
+    (p.codigo = 'TL-001' AND lower(c.nome) = lower('Branco') AND c.grupo_id IS NULL) OR
+    (p.codigo = 'TL-002' AND lower(c.nome) = lower('Chocolate Branco') AND c.grupo_id IS NULL) OR
+    (p.codigo = 'TL-002' AND lower(c.nome) = lower('Chocolate Amargo') AND c.grupo_id = (SELECT id FROM tb_cor WHERE lower(nome)=lower('Chocolate Branco') AND grupo_id IS NULL))
+)
+ON CONFLICT DO NOTHING;
+
+-- ======================================
+-- EXEMPLOS DE EXCLUSAO (opcional)
+-- Ex: TL-002 nao quer exibir a chave "espessura" e uma subcor específica
+-- ======================================
+INSERT INTO tb_produto_exibicao_exclusao (produto_id, tipo, chave)
+SELECT p.id, 'DETALHE_CHAVE', 'espessura'
+FROM tb_produto p
+WHERE p.codigo = 'TL-002'
+ON CONFLICT DO NOTHING;
+
+INSERT INTO tb_produto_exibicao_exclusao (produto_id, tipo, ref_id)
+SELECT p.id, 'SUBCOR', sc.id
+FROM tb_produto p
+JOIN tb_cor grp ON lower(grp.nome)=lower('Chocolate Branco') AND grp.grupo_id IS NULL
+JOIN tb_cor sc ON sc.grupo_id = grp.id AND lower(sc.nome)=lower('Chocolate Meio Amargo')
+WHERE p.codigo = 'TL-002'
 ON CONFLICT DO NOTHING;

@@ -11,4 +11,6 @@ public interface ProdutoCampoExibicaoRepository extends JpaRepository<ProdutoCam
     List<ProdutoCampoExibicao> findByProdutoId(Long produtoId);
 
     Optional<ProdutoCampoExibicao> findByProdutoIdAndCampo(Long produtoId, String campo);
+
+    void deleteByProdutoIdAndCampo(Long produtoId, String campo);
 }

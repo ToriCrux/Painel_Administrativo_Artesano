@@ -1,7 +1,9 @@
 package com.sistema.catalogoservice.catalogo.produto.api.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.List;
 
 public record ProdutoRequest(
@@ -12,15 +14,19 @@ public record ProdutoRequest(
         @NotBlank @Size(max = 120)
         String nome,
 
+        // ✅ Sempre presente (no seu modelo atual)
+        // [] => limpa / [...] => substitui
         @NotNull
-        List<CategoriaHierarquiaRequest> categorias, // ✅ estrutura hierárquica
+        @Valid
+        List<CategoriaHierarquiaRequest> categorias,
 
-        @NotNull
-        @Size(min = 1, message = "Informe pelo menos 1 grupo de cor")
-        List<CorGrupoRequest> cores, // ✅ agora suporta N grupos e N subcores
+        // ✅ Opcional: se vier null => não altera (se você enviar)
+        // [] => limpa / [...] => substitui
+        @Valid
+        List<CorGrupoRequest> cores,
 
-        @Size(max = 120)
-        String medidas,
+        // ✅ Opcional: null => não altera / {} => limpa / {...} => substitui
+        Map<String, String> detalhesTecnicos,
 
         @NotNull @DecimalMin(value = "0.0")
         BigDecimal precoUnitario,

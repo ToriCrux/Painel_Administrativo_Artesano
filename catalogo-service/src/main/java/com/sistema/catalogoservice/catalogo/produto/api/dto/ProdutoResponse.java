@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.Map;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record ProdutoResponse(
@@ -13,7 +14,10 @@ public record ProdutoResponse(
 		String nome,
 		List<CategoriaHierarquiaResponse> categoriasHierarquia,
 		List<CorHierarquiaResponse> coresHierarquia,
-		String medidas,
+
+		// ✅ NOVO
+		Map<String, String> detalhesTecnicos,
+
 		BigDecimal precoUnitario,
 		Boolean ativo,
 		String imagemPrincipalUrl,
