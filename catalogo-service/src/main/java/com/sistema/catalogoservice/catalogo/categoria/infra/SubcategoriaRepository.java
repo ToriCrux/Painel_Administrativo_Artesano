@@ -16,7 +16,6 @@ public interface SubcategoriaRepository extends JpaRepository<Subcategoria, Long
 
     List<Subcategoria> findByCategoriaId(Long categoriaId);
 
-    // 🔹 NOVO: busca subcategoria por nome + nome da categoria (case-insensitive)
     @Query("""
         SELECT s FROM Subcategoria s
         JOIN FETCH s.categoria c
@@ -27,4 +26,13 @@ public interface SubcategoriaRepository extends JpaRepository<Subcategoria, Long
             @Param("categoriaNome") String categoriaNome,
             @Param("subcategoriaNome") String subcategoriaNome
     );
+
+    // ✅ 2ª query: fetch itens (evita MultipleBagFetchException)
+    @Query("""
+        SELECT DISTINCT s
+        FROM Subcategoria s
+        LEFT JOIN FETCH s.itens i
+        WHERE s.categoria.id IN :categoriaIds
+    """)
+    List<Subcategoria> findAllByCategoriaIdInFetchItens(@Param("categoriaIds") List<Long> categoriaIds);
 }

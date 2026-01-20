@@ -49,4 +49,13 @@ public interface CorRepository extends JpaRepository<Cor, Long> {
             @Param("grupoId") Long grupoId,
             @Param("nomesLower") List<String> nomesLower
     );
+
+    @Query("""
+        SELECT DISTINCT c
+        FROM Cor c
+        LEFT JOIN FETCH c.subcores s
+        WHERE c.grupo IS NULL
+          AND c.ativo = true
+    """)
+    List<Cor> findGruposAtivosComSubcores();
 }
