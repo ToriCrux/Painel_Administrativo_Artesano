@@ -473,6 +473,11 @@ services:
 
       LOGGING_FILE_NAME: /var/log/app/proposta-service.log
       LOGGING_PATTERN_LEVEL: "%5p [$${spring.application.name:},trace=%X{traceId:-},span=%X{spanId:-}]"
+
+      # ✅ NOVO: chaves de criptografia (AES + HMAC)
+      APP_CRYPTO_AES_KEY_BASE64: "PlsImdEylDaKZ9yadMVPpFOe/E3a/SWL5irK7ZgUyto="
+      APP_CRYPTO_HMAC_KEY_BASE64: "9JXGMtnc2A4qxHbWqKalvloJkoSvFzaYVs55Rs59TVg="
+
     ports:
       - "8084:8084"
     volumes:

@@ -14,5 +14,3 @@ spring:
     url: ${SPRING_FLYWAY_URL:${spring.datasource.url}}
     user: ${SPRING_FLYWAY_USER:${spring.datasource.username}}
     password: ${SPRING_FLYWAY_PASSWORD:${spring.datasource.password}}
-
-

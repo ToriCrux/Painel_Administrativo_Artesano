@@ -11,11 +11,14 @@ spring:
       resourceserver:
         jwt: {}
   jpa:
+    open-in-view: false
     properties:
       hibernate:
         jdbc:
           time_zone: UTC
-    open-in-view: false
+
+server:
+  port: 8084
 
 eureka:
   instance:
@@ -27,11 +30,23 @@ eureka:
     service-url:
       defaultZone: http://registry:8761/eureka/
 
-server:
-  port: 8084
-
 management:
   endpoints:
     web:
       exposure:
         include: health,info,prometheus
+  tracing:
+    sampling:
+      probability: 1.0
+  zipkin:
+    tracing:
+      endpoint: http://zipkin:9411/api/v2/spans
+
+# ✅ NOVO (Config de criptografia / backfill)
+app:
+  crypto:
+    aes-key-base64: ${APP_CRYPTO_AES_KEY_BASE64:}
+    hmac-key-base64: ${APP_CRYPTO_HMAC_KEY_BASE64:}
+    backfill:
+      enabled: ${APP_CRYPTO_BACKFILL_ENABLED:false}
+      null-legacy: ${APP_CRYPTO_BACKFILL_NULL_LEGACY:false}

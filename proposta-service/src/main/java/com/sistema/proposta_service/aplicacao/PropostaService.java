@@ -1,5 +1,6 @@
 package com.sistema.proposta_service.aplicacao;
 
+import com.sistema.proposta_service.config.crypto.CryptoService;
 import com.sistema.proposta_service.dominio.Cliente;
 import com.sistema.proposta_service.dominio.Proposta;
 import com.sistema.proposta_service.infra.ClienteRepository;
@@ -21,58 +22,99 @@ public class PropostaService {
     private final ClienteRepository clienteRepository;
     private final ApplicationEventPublisher eventPublisher;
 
-    /**
-     * Salva proposta e publica evento (envio ao Rabbit será AFTER_COMMIT no listener),
-     * carregando o Authorization do usuário que criou a proposta.
-     */
+    private final CryptoService crypto;
+
     @Transactional
     public Proposta salvar(Proposta proposta, String authorization) {
         if (proposta == null || proposta.getCliente() == null) {
             throw new IllegalArgumentException("Cliente é obrigatório para criar a proposta (ao menos CPF/CNPJ, nome e email).");
         }
 
-        Cliente recebido = proposta.getCliente();
-        String cpfCnpj = recebido.getCpfCnpj();
+        // ----------------------------
+        // 1) validações (em claro vindo do DTO)
+        // ----------------------------
+        Cliente recebidoPlain = proposta.getCliente();
 
-        if (cpfCnpj == null || cpfCnpj.isBlank()) {
+        String cpfCnpjPlain = recebidoPlain.getCpfCnpjLegacy(); // ⚠ vem do controller (ver abaixo)
+        String nomePlain = recebidoPlain.getNome();
+        String emailPlain = recebidoPlain.getEmailLegacy();      // ⚠ vem do controller (ver abaixo)
+
+        if (cpfCnpjPlain == null || cpfCnpjPlain.isBlank()) {
             throw new IllegalArgumentException("CPF/CNPJ é obrigatório para criar a proposta.");
         }
-        if (recebido.getNome() == null || recebido.getNome().isBlank()) {
+        if (nomePlain == null || nomePlain.isBlank()) {
             throw new IllegalArgumentException("Nome do cliente é obrigatório.");
         }
-        if (recebido.getEmail() == null || recebido.getEmail().isBlank()) {
+        if (emailPlain == null || emailPlain.isBlank()) {
             throw new IllegalArgumentException("Email do cliente é obrigatório.");
         }
 
-        // 1) Upsert do cliente por CPF/CNPJ
-        Cliente clienteGerenciado = clienteRepository.findByCpfCnpj(cpfCnpj)
+        // ----------------------------
+        // 2) calcula hash para upsert
+        // ----------------------------
+        String cpfNorm = crypto.normalize(cpfCnpjPlain);
+        String cpfHash = crypto.hmacSha256Hex(cpfNorm);
+
+        // ----------------------------
+        // 3) monta "cliente criptografado" (sem depender do JPA converter)
+        // ----------------------------
+        Cliente recebidoCripto = Cliente.builder()
+                .nome(nomePlain)
+
+                .cpfCnpjEnc(crypto.encrypt(cpfCnpjPlain))
+                .cpfCnpjHash(cpfHash)
+
+                .telefoneEnc(crypto.encrypt(recebidoPlain.getTelefoneLegacy()))
+                .telefoneHash(crypto.hmacSha256Hex(crypto.normalize(recebidoPlain.getTelefoneLegacy())))
+
+                .emailEnc(crypto.encrypt(emailPlain))
+                .emailHash(crypto.hmacSha256Hex(crypto.normalize(emailPlain)))
+
+                .cepEnc(crypto.encrypt(recebidoPlain.getCepLegacy()))
+                .enderecoEnc(crypto.encrypt(recebidoPlain.getEnderecoLegacy()))
+                .numeroEnc(crypto.encrypt(recebidoPlain.getNumeroLegacy()))
+                .complementoEnc(crypto.encrypt(recebidoPlain.getComplementoLegacy()))
+                .bairroEnc(crypto.encrypt(recebidoPlain.getBairroLegacy()))
+                .cidade(recebidoPlain.getCidade())
+                .uf(recebidoPlain.getUf())
+                .referenciaEnc(crypto.encrypt(recebidoPlain.getReferenciaLegacy()))
+                .build();
+
+        // ----------------------------
+        // 4) upsert: tenta por hash; se ainda não tiver hash legado, tenta por cpf legado (fase migração)
+        // ----------------------------
+        Cliente clienteGerenciado = clienteRepository.findByCpfCnpjHash(cpfHash)
+                .or(() -> clienteRepository.findByCpfCnpjLegacy(cpfCnpjPlain))
                 .map(existente -> {
-                    existente.aplicarAtualizacoesSeVieram(recebido);
+                    existente.aplicarAtualizacoesSeVieramCriptografadas(recebidoCripto);
                     return existente;
                 })
-                .orElseGet(() -> Cliente.novo(recebido));
+                .orElseGet(() -> Cliente.novoCriptografado(recebidoCripto));
 
+        // ----------------------------
+        // 5) salva cliente
+        // ----------------------------
         clienteGerenciado = clienteRepository.save(clienteGerenciado);
 
-        // 2) Amarra a proposta ao cliente gerenciado
+        // ----------------------------
+        // 6) amarra proposta e produtos
+        // ----------------------------
         proposta.setCliente(clienteGerenciado);
-
-        // 3) Garante proposta <-> produtos + subtotal/total
         proposta.amarrarProdutos();
 
-        // 4) Salva (cascade salva os produtos)
+        // ----------------------------
+        // 7) salva proposta
+        // ----------------------------
         Proposta salva = repository.save(proposta);
 
-        // 5) Dispara evento (o envio pro Rabbit acontecerá AFTER_COMMIT via listener)
+        // ----------------------------
+        // 8) evento AFTER_COMMIT (como você já fez)
+        // ----------------------------
         eventPublisher.publishEvent(new PropostaCriadaDomainEvent(salva.getId(), authorization));
 
         return salva;
     }
 
-    /**
-     * Mantém compatibilidade com chamadas internas (sem Authorization).
-     * Se você não tiver nenhum uso interno, pode remover.
-     */
     @Transactional
     public Proposta salvar(Proposta proposta) {
         return salvar(proposta, null);

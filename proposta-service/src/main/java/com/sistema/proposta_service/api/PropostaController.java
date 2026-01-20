@@ -5,6 +5,7 @@ import com.sistema.proposta_service.api.dto.ProdutoPropostaDTO;
 import com.sistema.proposta_service.api.dto.PropostaRequest;
 import com.sistema.proposta_service.api.dto.PropostaResponse;
 import com.sistema.proposta_service.aplicacao.PropostaService;
+import com.sistema.proposta_service.config.crypto.CryptoService;
 import com.sistema.proposta_service.dominio.Cliente;
 import com.sistema.proposta_service.dominio.ProdutoProposta;
 import com.sistema.proposta_service.dominio.Proposta;
@@ -26,6 +27,7 @@ import java.util.stream.Collectors;
 public class PropostaController {
 
     private final PropostaService service;
+    private final CryptoService crypto;
 
     @PreAuthorize("hasRole('ADMINISTRADOR')")
     @GetMapping
@@ -80,12 +82,12 @@ public class PropostaController {
                 .produtos(proposta.getProdutos().stream()
                         .map(this::toProdutoDTO)
                         .collect(Collectors.toList()))
-                .dataCriacao(proposta.getDataCriacao()) // 🆕 adicionado
+                .dataCriacao(proposta.getDataCriacao())
                 .build();
     }
 
     private Proposta toEntity(PropostaRequest request) {
-        Cliente cliente = toClienteEntity(request.getCliente());
+        Cliente cliente = toClienteEntityFromDtoPlain(request.getCliente());
 
         Proposta proposta = Proposta.builder()
                 .codigo(request.getCodigo())
@@ -103,36 +105,64 @@ public class PropostaController {
         return proposta;
     }
 
-    private ClienteDTO toClienteDTO(Cliente cliente) {
-        ClienteDTO dto = new ClienteDTO();
-        dto.setNome(cliente.getNome());
-        dto.setCpfCnpj(cliente.getCpfCnpj());
-        dto.setTelefone(cliente.getTelefone());
-        dto.setEmail(cliente.getEmail());
-        dto.setCep(cliente.getCep());
-        dto.setEndereco(cliente.getEndereco());
-        dto.setBairro(cliente.getBairro());
-        dto.setCidade(cliente.getCidade());
-        dto.setUf(cliente.getUf());
-        dto.setReferencia(cliente.getReferencia());
-        dto.setComplemento(cliente.getComplemento());
-        return dto;
-    }
-
-    private Cliente toClienteEntity(ClienteDTO dto) {
+    /**
+     * ✅ DTO -> Entidade (entrada em claro)
+     * Aqui nós colocamos os valores recebidos nos campos "*Legacy"
+     * para o service criptografar e gerar hash antes de persistir.
+     */
+    private Cliente toClienteEntityFromDtoPlain(ClienteDTO dto) {
         return Cliente.builder()
                 .nome(dto.getNome())
-                .cpfCnpj(dto.getCpfCnpj())
-                .telefone(dto.getTelefone())
-                .email(dto.getEmail())
-                .cep(dto.getCep())
-                .endereco(dto.getEndereco())
-                .bairro(dto.getBairro())
+                .cpfCnpjLegacy(dto.getCpfCnpj())
+                .telefoneLegacy(dto.getTelefone())
+                .emailLegacy(dto.getEmail())
+                .cepLegacy(dto.getCep())
+                .enderecoLegacy(dto.getEndereco())
+                .bairroLegacy(dto.getBairro())
                 .cidade(dto.getCidade())
                 .uf(dto.getUf())
-                .referencia(dto.getReferencia())
-                .complemento(dto.getComplemento())
+                .referenciaLegacy(dto.getReferencia())
+                .complementoLegacy(dto.getComplemento())
                 .build();
+    }
+
+    /**
+     * ✅ Entidade -> DTO (saída descriptografada)
+     * Usa enc se existir; senão, fallback para legado (durante migração).
+     */
+    private ClienteDTO toClienteDTO(Cliente cliente) {
+        ClienteDTO dto = new ClienteDTO();
+
+        dto.setNome(cliente.getNome());
+
+        // cpf/cnpj
+        String cpf = cliente.getCpfCnpjEnc() != null
+                ? crypto.decryptOrPassThrough(cliente.getCpfCnpjEnc())
+                : cliente.getCpfCnpjLegacy();
+        dto.setCpfCnpj(cpf);
+
+        // email
+        String email = cliente.getEmailEnc() != null
+                ? crypto.decryptOrPassThrough(cliente.getEmailEnc())
+                : cliente.getEmailLegacy();
+        dto.setEmail(email);
+
+        // telefone
+        String tel = cliente.getTelefoneEnc() != null
+                ? crypto.decryptOrPassThrough(cliente.getTelefoneEnc())
+                : cliente.getTelefoneLegacy();
+        dto.setTelefone(tel);
+
+        // demais
+        dto.setCep(cliente.getCepEnc() != null ? crypto.decryptOrPassThrough(cliente.getCepEnc()) : cliente.getCepLegacy());
+        dto.setEndereco(cliente.getEnderecoEnc() != null ? crypto.decryptOrPassThrough(cliente.getEnderecoEnc()) : cliente.getEnderecoLegacy());
+        dto.setBairro(cliente.getBairroEnc() != null ? crypto.decryptOrPassThrough(cliente.getBairroEnc()) : cliente.getBairroLegacy());
+        dto.setCidade(cliente.getCidade());
+        dto.setUf(cliente.getUf());
+        dto.setReferencia(cliente.getReferenciaEnc() != null ? crypto.decryptOrPassThrough(cliente.getReferenciaEnc()) : cliente.getReferenciaLegacy());
+        dto.setComplemento(cliente.getComplementoEnc() != null ? crypto.decryptOrPassThrough(cliente.getComplementoEnc()) : cliente.getComplementoLegacy());
+
+        return dto;
     }
 
     private ProdutoPropostaDTO toProdutoDTO(ProdutoProposta produto) {
